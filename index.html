@@ -4,7 +4,7 @@ let W,H,D=1,run=false,last=0,score=0,hp=100,cd=0,keys={},joy={x:0,y:0},look=null
 const map=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],FOV=Math.PI/3,p={x:2.5,y:1.8,a:0};let bots=[];
 function size(){D=Math.min(devicePixelRatio||1,1.5);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
 function wall(a,b){return a<0||b<0||a>=15||b>=13||map[Math.floor(b)][Math.floor(a)]==="1"}function ray(a){let dx=Math.cos(a),dy=Math.sin(a),xx=p.x,yy=p.y,d=0;while(d<30){xx+=dx*.03;yy+=dy*.03;d+=.03;if(wall(xx,yy))break}return d}
-function initAudio(){if(!audio){audio=new (window.AudioContext||window.webkitAudioContext)()}if(audio.state==="suspended")audio.resume()}
+function initAudio(){try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}if(!audio){audio=new (window.AudioContext||window.webkitAudioContext)()}if(audio.state==="suspended")audio.resume()}
 function tone(freq,duration,type="square",volume=.04,slide=0){if(!audio)return;let o=audio.createOscillator(),g=audio.createGain(),now=audio.currentTime;o.type=type;o.frequency.setValueAtTime(freq,now);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide),now+duration);g.gain.setValueAtTime(volume,now);g.gain.exponentialRampToValueAtTime(.001,now+duration);o.connect(g);g.connect(audio.destination);o.start(now);o.stop(now+duration)}
 function shootSound(){tone(180,.08,"square",.055,-80);tone(520,.045,"sawtooth",.025,-260)}
 function hitSound(){tone(110,.12,"triangle",.045,180);tone(70,.16,"sine",.025,-30)}
