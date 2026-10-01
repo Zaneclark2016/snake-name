@@ -1,173 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Neon Blaster</title>
-<style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07111f;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:white}
-body{touch-action:none}
-canvas{display:block;width:100%;height:100%;touch-action:none}
-#hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;font-weight:800;font-size:17px;pointer-events:none;text-shadow:0 2px 5px #000;z-index:2}
-#hud span{background:rgba(4,10,20,.58);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:7px 10px}
-#menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 35%,rgba(21,65,110,.55),rgba(3,8,17,.96));z-index:5}
-.panel{width:min(88vw,430px);padding:28px;border-radius:24px;text-align:center;background:rgba(8,17,32,.9);border:1px solid rgba(104,221,255,.3);box-shadow:0 20px 70px #0008}
-h1{margin:0 0 8px;font-size:44px;letter-spacing:-2px}
-.sub{margin:0 0 24px;color:#a9bed4}
-button{border:0;border-radius:15px;padding:14px 25px;font-size:18px;font-weight:800;color:#06101d;background:#6be7ff;box-shadow:0 8px 25px #35cfee44;cursor:pointer}
-button:active{transform:scale(.97)}
-.small{font-size:13px;color:#8299b1;margin-top:18px;line-height:1.5}
-.hidden{display:none!important}
-</style>
-</head>
-<body>
-<canvas id="game"></canvas>
-<div id="hud" class="hidden">
-  <span>Score: <b id="score">0</b></span>
-  <span>Wave: <b id="wave">1</b></span>
-  <span>Lives: <b id="lives">3</b></span>
-</div>
-<div id="menu">
-  <div class="panel">
-    <h1 id="title">NEON BLASTER</h1>
-    <p class="sub" id="subtitle">Tap or click to fire. Survive the waves and hit the targets.</p>
-    <button id="start">Start Game</button>
-    <div class="small">On iPad: tap anywhere to shoot toward that spot.<br>Targets get faster as your score rises.</div>
-  </div>
-</div>
-<script>
-const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
-const scoreEl=document.getElementById("score"),waveEl=document.getElementById("wave"),livesEl=document.getElementById("lives");
-const menu=document.getElementById("menu"),title=document.getElementById("title"),subtitle=document.getElementById("subtitle"),start=document.getElementById("start"),hud=document.getElementById("hud");
-let W=0,H=0,dpr=1,running=false,score=0,lives=3,wave=1,last=0,spawnTimer=0,shake=0;
-let targets=[],shots=[],particles=[],stars=[];
-const player={x:0,y:0};
-
-function resize(){
-  dpr=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight;
-  canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
-  player.x=W/2;player.y=H-70;
-  if(!stars.length) for(let i=0;i<90;i++) stars.push({x:Math.random()*W,y:Math.random()*H,s:Math.random()*1.8+.3,a:Math.random()*.8+.2});
-}
-addEventListener("resize",resize); resize();
-
-function reset(){
-  score=0;lives=3;wave=1;targets=[];shots=[];particles=[];spawnTimer=0;shake=0;
-  scoreEl.textContent=score;waveEl.textContent=wave;livesEl.textContent=lives;
-  player.x=W/2;player.y=H-70;
-}
-function startGame(){
-  reset();running=true;menu.classList.add("hidden");hud.classList.remove("hidden");last=performance.now();requestAnimationFrame(loop);
-}
-start.addEventListener("click",startGame);
-
-function fire(tx,ty){
-  if(!running)return;
-  const dx=tx-player.x,dy=ty-player.y,len=Math.hypot(dx,dy)||1;
-  shots.push({x:player.x,y:player.y,vx:dx/len*760,vy:dy/len*760,life:1});
-  for(let i=0;i<4;i++) particles.push({x:player.x,y:player.y,vx:(Math.random()-.5)*80,vy:Math.random()*-80-20,life:.25,max:.25,r:Math.random()*2+1});
-}
-function pointer(e){
-  const r=canvas.getBoundingClientRect(),x=(e.clientX??e.touches?.[0]?.clientX)-r.left,y=(e.clientY??e.touches?.[0]?.clientY)-r.top;
-  fire(x,y);
-}
-canvas.addEventListener("pointerdown",pointer);
-
-function spawn(){
-  const edge=45;
-  const r=16+Math.random()*17;
-  targets.push({
-    x:edge+r+Math.random()*(W-edge*2-r*2),y:-r,
-    r,vy:65+wave*11+Math.random()*45,vx:(Math.random()-.5)*(35+wave*4),
-    hp:1,phase:Math.random()*7
-  });
-}
-function burst(x,y){
-  for(let i=0;i<18;i++){
-    const a=Math.random()*Math.PI*2,s=Math.random()*180+40;
-    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.5+Math.random()*.35,max:.85,r:Math.random()*3+1});
-  }
-}
-function endGame(){
-  running=false;hud.classList.add("hidden");menu.classList.remove("hidden");
-  title.textContent="GAME OVER";subtitle.textContent="Final score: "+score+" • Wave "+wave;
-  start.textContent="Play Again";
-}
-
-function update(dt){
-  wave=1+Math.floor(score/100);waveEl.textContent=wave;
-  spawnTimer-=dt;
-  const interval=Math.max(.28,1.0-wave*.055);
-  if(spawnTimer<=0){spawn();spawnTimer=interval*(.7+Math.random()*.5)}
-  for(const s of shots){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt}
-  shots=shots.filter(s=>s.life>0&&s.x>-30&&s.x<W+30&&s.y>-30&&s.y<H+30);
-
-  for(const t of targets){
-    t.y+=t.vy*dt;t.x+=t.vx*dt;t.phase+=dt*3;
-    if(t.x<t.r||t.x>W-t.r)t.vx*=-1;
-  }
-  for(let i=shots.length-1;i>=0;i--){
-    const s=shots[i];
-    for(let j=targets.length-1;j>=0;j--){
-      const t=targets[j],d=Math.hypot(s.x-t.x,s.y-t.y);
-      if(d<t.r+6){
-        score+=10;scoreEl.textContent=score;burst(t.x,t.y);targets.splice(j,1);shots.splice(i,1);shake=.08;break;
-      }
-    }
-  }
-  for(let i=targets.length-1;i>=0;i--){
-    if(targets[i].y-targets[i].r>H){
-      targets.splice(i,1);lives--;livesEl.textContent=lives;shake=.16;
-      if(lives<=0){endGame();return}
-    }
-  }
-  for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=120*dt;p.life-=dt}
-  particles=particles.filter(p=>p.life>0);
-  if(shake>0)shake-=dt;
-}
-
-function draw(){
-  ctx.save();
-  if(shake>0)ctx.translate((Math.random()-.5)*10,(Math.random()-.5)*10);
-  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#08172a");g.addColorStop(1,"#030812");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  for(const st of stars){ctx.globalAlpha=st.a;ctx.fillStyle="#bcecff";ctx.beginPath();ctx.arc(st.x,st.y,st.s,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
-
-  // subtle arena grid
-  ctx.strokeStyle="rgba(70,170,210,.07)";ctx.lineWidth=1;
-  for(let y=H-220;y<H;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
-  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,H-220);ctx.lineTo(x,H);ctx.stroke()}
-
-  // shots
-  for(const s of shots){
-    ctx.strokeStyle="#7df5ff";ctx.lineWidth=4;ctx.lineCap="round";ctx.globalAlpha=Math.max(0,s.life);
-    ctx.beginPath();ctx.moveTo(s.x-s.vx*.025,s.y-s.vy*.025);ctx.lineTo(s.x,s.y);ctx.stroke();
-  }ctx.globalAlpha=1;
-
-  // targets
-  for(const t of targets){
-    ctx.save();ctx.translate(t.x,t.y);
-    const pulse=1+Math.sin(t.phase)*.08;ctx.scale(pulse,pulse);
-    ctx.shadowBlur=18;ctx.shadowColor="#ff4f9a";ctx.fillStyle="#ff4f9a";ctx.beginPath();ctx.arc(0,0,t.r,0,Math.PI*2);ctx.fill();
-    ctx.shadowBlur=0;ctx.fillStyle="#102039";ctx.beginPath();ctx.arc(0,0,t.r*.63,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle="#ffdd72";ctx.beginPath();ctx.arc(0,0,t.r*.27,0,Math.PI*2);ctx.fill();
-    ctx.restore();
-  }
-
-  // player ship
-  ctx.save();ctx.translate(player.x,player.y);ctx.shadowBlur=18;ctx.shadowColor="#62eaff";
-  ctx.fillStyle="#68eaff";ctx.beginPath();ctx.moveTo(0,-25);ctx.lineTo(18,18);ctx.lineTo(0,11);ctx.lineTo(-18,18);ctx.closePath();ctx.fill();
-  ctx.shadowBlur=0;ctx.fillStyle="#0b2940";ctx.beginPath();ctx.arc(0,0,6,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#fff";ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(0,17,5+Math.random()*3,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.restore();
-
-  for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle="#ffd76a";ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
-  ctx.restore();
-}
-
-function loop(now){
-  if(!running)return;
-  const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);draw();if(running)requestAnimationFrame(loop);
-}
-</script>
-</body>
-</html>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>NEON FPS</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:system-ui}body{touch-action:none}canvas{width:100%;height:100%;display:block}#hud{position:fixed;inset:0;pointer-events:none}#score,#hp{position:absolute;top:12px;padding:8px 12px;background:#06101dcc;border-radius:12px;font-weight:800}#score{left:12px}#hp{right:12px}#cross{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)}#cross:before,#cross:after{content:"";position:absolute;background:#fff;box-shadow:0 0 8px #6ef}#cross:before{width:22px;height:2px;top:10px}#cross:after{height:22px;width:2px;left:10px}.hidden{display:none!important}#menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#020712ee}.panel{width:min(88vw,420px);padding:30px;text-align:center;border:1px solid #5deaff55;border-radius:24px;background:#07111eee}h1{font-size:48px;margin:0}.sub{color:#abc;margin-bottom:24px}button{padding:14px 28px;border:0;border-radius:14px;background:#65eaff;font-size:18px;font-weight:900}.small{font-size:13px;color:#8196aa;margin-top:18px;line-height:1.5}</style></head><body><canvas id="g"></canvas><div id="hud" class="hidden"><b id="score">SCORE 0</b><b id="hp">HP 100</b><div id="cross"></div></div><div id="menu"><div class="panel"><h1 id="title">NEON FPS</h1><p class="sub" id="sub">3D arcade first-person target game.</p><button id="start">START</button><div class="small">Desktop: WASD/arrows to move, mouse to aim.<br>iPad: drag right to look and tap to fire; drag left to move.</div></div></div><script>
+const c=document.getElementById("g"),x=c.getContext("2d"),menu=document.getElementById("menu"),hud=document.getElementById("hud"),sc=document.getElementById("score"),hpv=document.getElementById("hp"),start=document.getElementById("start"),title=document.getElementById("title"),sub=document.getElementById("sub");
+let W,H,D=1,run=false,last=0,score=0,hp=100,cd=0,keys={},joy={x:0,y:0},look=null,mt=null;
+const map=["111111111111111","100000000000001","101111011111101","100001000010001","101101011010101","100100000000101","100101111110001","100100000010001","101111011011101","100000010000001","101111010111101","100000000000001","111111111111111"],FOV=Math.PI/3,p={x:2.5,y:1.8,a:0};let bots=[];
+function size(){D=Math.min(devicePixelRatio||1,1.5);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
+function wall(a,b){return a<0||b<0||a>=15||b>=13||map[Math.floor(b)][Math.floor(a)]==="1"}function ray(a){let dx=Math.cos(a),dy=Math.sin(a),xx=p.x,yy=p.y,d=0;while(d<30){xx+=dx*.03;yy+=dy*.03;d+=.03;if(wall(xx,yy))break}return d}
+function spawn(){let s=[[11.5,1.5],[9.5,3.5],[12.5,5.5],[4.5,9.5],[10.5,10.5],[7.5,5.5],[2.5,10.5]][Math.floor(Math.random()*7)];if(Math.hypot(s[0]-p.x,s[1]-p.y)<3)return spawn();bots.push({x:s[0],y:s[1]})}
+function ui(){sc.textContent="SCORE "+score;hpv.textContent="HP "+Math.max(0,Math.floor(hp))}
+function reset(){p.x=2.5;p.y=1.8;p.a=0;score=0;hp=100;cd=0;bots=[];for(let i=0;i<7;i++)spawn();ui()}
+function gameOver(){run=false;hud.classList.add("hidden");menu.classList.remove("hidden");title.textContent="GAME OVER";sub.textContent="Score "+score;start.textContent="PLAY AGAIN"}
+function fire(){if(!run||cd>0)return;cd=.2;let best=null,bd=99;for(const b of bots){let dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(Math.abs(a)<.11&&d<bd&&d<ray(p.a)){best=b;bd=d}}if(best){score+=100;bots=bots.filter(q=>q!==best);setTimeout(()=>run&&spawn(),250);ui()}}
+function move(dx,dy){let nx=p.x+dx,ny=p.y+dy;if(!wall(nx,p.y))p.x=nx;if(!wall(p.x,ny))p.y=ny}
+function update(dt){cd=Math.max(0,cd-dt);let mx=0,my=0;if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a)mx--;if(keys.d)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;mx+=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.08*dt*60,fx=Math.cos(p.a),fy=Math.sin(p.a),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);for(const b of bots){let dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy);if(d>1.2){let q=.012*dt*60;b.x+=dx/d*q;b.y+=dy/d*q;if(wall(b.x,b.y)){b.x-=dx/d*q;b.y-=dy/d*q}}else{hp-=10*dt;ui();if(hp<=0)return gameOver()}}}
+function draw(){let h=H/2;x.fillStyle="#071329";x.fillRect(0,0,W,h);x.fillStyle="#101922";x.fillRect(0,h,W,H-h);let n=Math.ceil(W/2),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a)*Math.cos(a-p.a);z[i]=d;let wh=Math.min(H*2,H/(d*.72)),yy=h-wh/2,sh=Math.max(.15,1-d/16);x.fillStyle="rgb("+~~(18+35*sh)+","+~~(48+80*sh)+","+~~(70+100*sh)+")";x.fillRect(i*2,yy,2,wh)}
+bots.slice().sort((a,b)=>Math.hypot(b.x-p.x,b.y-p.y)-Math.hypot(a.x-p.x,a.y-p.y)).forEach(b=>{let dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(Math.abs(a)>FOV*.65)return;let cd2=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.4,H/(cd2*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd2<=z[zi]+.1){x.save();x.translate(sx,h-wh*.15);x.fillStyle="#ff3e96";x.beginPath();x.arc(0,wh*.08,wh*.15,0,7);x.fill();x.fillStyle="#72164b";x.fillRect(-wh*.18,wh*.2,wh*.36,wh*.32);x.fillStyle="#ffe66b";x.beginPath();x.arc(-wh*.055,wh*.06,wh*.025,0,7);x.arc(wh*.055,wh*.06,wh*.025,0,7);x.fill();x.restore()}});x.save();x.translate(W/2,H*.88);x.fillStyle="#15283a";x.strokeStyle="#65eaff";x.lineWidth=2;x.beginPath();x.moveTo(-45,55);x.lineTo(-25,-65);x.lineTo(25,-65);x.lineTo(45,55);x.closePath();x.fill();x.stroke();x.fillStyle="#6ef";x.fillRect(-4,-95,8,55);x.restore()}
+function loop(t){if(!run)return;let dt=Math.min(.033,(t-last)/1000);last=t;update(dt);draw();if(run)requestAnimationFrame(loop)}
+function begin(){reset();run=true;menu.classList.add("hidden");hud.classList.remove("hidden");last=performance.now();requestAnimationFrame(loop)}start.onclick=begin;
+addEventListener("keydown",e=>keys[e.key.toLowerCase()]=1);addEventListener("keyup",e=>keys[e.key.toLowerCase()]=0);
+c.addEventListener("pointerdown",e=>{if(!run)return;if(e.clientX<W*.42){mt={id:e.pointerId,x:e.clientX,y:e.clientY}}else{look={id:e.pointerId,x:e.clientX,y:e.clientY};fire()}});
+c.addEventListener("pointermove",e=>{if(mt&&e.pointerId===mt.id){joy.x=Math.max(-1,Math.min(1,(e.clientX-mt.x)/70));joy.y=-Math.max(-1,Math.min(1,(e.clientY-mt.y)/70))}if(look&&e.pointerId===look.id){p.a+=(e.clientX-look.x)*.008;look.x=e.clientX}});
+c.addEventListener("pointerup",e=>{if(mt&&e.pointerId===mt.id){mt=null;joy={x:0,y:0}}if(look&&e.pointerId===look.id)look=null});
+</script></body></html>
