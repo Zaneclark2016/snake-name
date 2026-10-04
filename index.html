@@ -16,8 +16,8 @@ window.addEventListener("unhandledrejection",e=>{const s=document.getElementById
 const c=document.getElementById("g"),x=c.getContext("2d"),hud=document.getElementById("hud"),statusEl=document.getElementById("status"),playersEl=document.getElementById("players"),joystick=document.getElementById("joystick"),joystickThumb=document.getElementById("joystickThumb");
 let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[],netClock=0,frameClock=0,anim=0;const TV_MODE=true,MAX_FPS=30,QUALITY=.52;
 const arenaMap=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],lobbyMap=["111111111101111111111","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","111111111111111111111"],FOV=Math.PI/2.85,p={x:7.5,y:10.5,a:-Math.PI/2};let gameMode="lobby";let doorOpen=0;function activeMap(){return gameMode==="lobby"?lobbyMap:arenaMap}
-function doorBlocking(a,b){if(gameMode!=="lobby"||b<0||b>1||a<10||a>11)return false;const gap=1.0*doorOpen,left=10.5-gap/2,right=10.5+gap/2;return a<left||a>right}
-function updateDoor(dt){if(gameMode!=="lobby"){doorOpen=0;return}let d=Math.hypot(p.x-10,p.y-.9);let target=d<3.0?1:0;doorOpen+=(target-doorOpen)*Math.min(1,dt*4.5)}
+function doorBlocking(a,b){if(gameMode!=="lobby"||b<0||b>1||a<10||a>11)return false;const gapW=Math.min(.92,1.0*doorOpen),left=10.5-gapW/2,right=10.5+gapW/2;return a<left||a>right}
+function updateDoor(dt){if(gameMode!=="lobby"){doorOpen=0;return}let d=Math.hypot(p.x-10.5,p.y-.05);let target=d<3.0?1:0;doorOpen+=(target-doorOpen)*Math.min(1,dt*4.5)}
 function size(){D=QUALITY;W=innerWidth;H=innerHeight;c.width=Math.max(320,Math.floor(W*D));c.height=Math.max(180,Math.floor(H*D));x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
 function wall(a,b){return a<0||b<0||a<0||b<0||a>=activeMap()[0].length||b>=activeMap().length||activeMap()[Math.floor(b)][Math.floor(a)]==="1"||doorBlocking(a,b)}
 function ray(a){let dx=Math.cos(a),dy=Math.sin(a),xx=p.x,yy=p.y,d=0;while(d<24){xx+=dx*.06;yy+=dy*.06;d+=.06;if(wall(xx,yy))break}return d}
@@ -60,7 +60,7 @@ function update(dt){
 }
 function draw(){anim+=.045;
  const originalX=p.x,originalY=p.y,originalA=p.a;
- if(gameMode==="lobby"){const camDist=2.0,camAngle=Math.atan2(0-originalY,10.5-originalX);p.x=originalX-Math.cos(camAngle)*camDist;p.y=originalY-Math.sin(camAngle)*camDist;p.a=camAngle;}
+ if(gameMode==="lobby"){const camDist=2.0,camAngle=originalA+Math.PI*.75;p.x=originalX-Math.cos(camAngle)*camDist;p.y=originalY-Math.sin(camAngle)*camDist;p.a=camAngle;}
  let h=gameMode==="lobby"?H*.42:H/2;
  if(gameMode==="lobby"){
   let ceiling=x.createLinearGradient(0,0,0,h);ceiling.addColorStop(0,"#07101b");ceiling.addColorStop(.7,"#101d2a");ceiling.addColorStop(1,"#1a2b38");x.fillStyle=ceiling;x.fillRect(0,0,W,h);
@@ -70,33 +70,8 @@ function draw(){anim+=.045;
   let sky=x.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#5ec8ff");sky.addColorStop(.55,"#a8e6ff");sky.addColorStop(1,"#e8f9ff");x.fillStyle=sky;x.fillRect(0,0,W,h);
   let ground=x.createLinearGradient(0,h,0,H);ground.addColorStop(0,"#9dcc72");ground.addColorStop(.5,"#b9df86");ground.addColorStop(1,"#d7eea8");x.fillStyle=ground;x.fillRect(0,h,W,H-h);
  }
- let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a),ca=Math.cos(a-p.a),cd=d*ca;z[i]=cd;let hitX=p.x+Math.cos(a)*d,hitY=p.y+Math.sin(a)*d;let doorHit=gameMode==="lobby"&&hitY<=.08&&hitY>=-.08&&hitX>=10&&hitX<=11&&doorBlocking(hitX,hitY);let wh=Math.min(H*2,H/(Math.max(.2,cd)*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);if(doorHit){x.fillStyle="rgb("+~~(45+45*sh)+","+~~(65+55*sh)+","+~~(75+65*sh)+")";x.fillRect(i*4,yy,4,wh)}else{x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}}
+ let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a),ca=Math.cos(a-p.a),cd=d*ca;z[i]=cd;let hitX=p.x+Math.cos(a)*d,hitY=p.y+Math.sin(a)*d;let doorHit=gameMode==="lobby"&&hitY<=.08&&hitY>=-.08&&hitX>=10&&hitX<=11&&doorBlocking(hitX,hitY);let wh=Math.min(H*2,H/(Math.max(.2,cd)*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);if(doorHit){const panelSide=hitX<10.5?"left":"right";x.fillStyle=panelSide==="left"?"#294638":"#31523f";x.fillRect(i*4,yy,4,wh);x.fillStyle="rgba(130,230,200,.18)";x.fillRect(i*4,yy+wh*.08,4,Math.max(2,wh*.025));x.fillStyle="rgba(0,0,0,.25)";x.fillRect(i*4,yy+wh*.86,4,Math.max(2,wh*.035))}else{x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}}
  if(gameMode==="lobby"){
-  // Two-panel sliding exit door: the panels separate horizontally as doorOpen increases.
-  const panelW=.5,panelH=1.9,shift=.75*doorOpen;
-  const panels=[10.25-shift,10.75+shift];
-  for(const pxw of panels){
-   const dx=pxw-p.x,dy=0-p.y,d=Math.hypot(dx,dy),da=Math.atan2(dy,dx)-p.a;
-   while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
-   if(Math.abs(da)<FOV*.62&&d>.2&&d<24){
-    const cd=d*Math.cos(da),sx=(.5+da/FOV)*W,ph=Math.min(H*2,H/(Math.max(.2,cd)*.72)),pw=Math.max(4,Math.abs((panelW/d)*W/FOV));
-    const top=h-ph/2,bottom=h+ph/2;
-    x.save();x.fillStyle="#1b3328";x.strokeStyle="#0b1711";x.lineWidth=Math.max(2,pw*.05);x.fillRect(sx-pw/2,top,pw,ph);x.strokeRect(sx-pw/2,top,pw,ph);
-    x.fillStyle="rgba(110,220,190,.28)";x.fillRect(sx-pw*.38,top+ph*.08,pw*.76,Math.max(3,ph*.035));
-    x.fillStyle="rgba(150,255,220,.12)";x.fillRect(sx-pw*.08,top+ph*.08,pw*.16,ph*.84);
-    x.fillStyle="rgba(0,0,0,.22)";x.fillRect(sx-pw*.38,bottom-ph*.08,pw*.76,Math.max(3,ph*.04));x.restore();
-   }
-  }
-  // Door frame/header.
-  const frameW=.10,frameH=2.05;
-  for(const fx of [10,11]){
-   const dx=fx-p.x,dy=-p.y,d=Math.hypot(dx,dy),da=Math.atan2(dy,dx)-p.a;
-   while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
-   if(Math.abs(da)<FOV*.62&&d>.2&&d<24){
-    const cd=d*Math.cos(da),sx=(.5+da/FOV)*W,ph=Math.min(H*2,H/(Math.max(.2,cd)*.72)),pw=Math.max(3,Math.abs((frameW/d)*W/FOV));
-    x.fillStyle="#101b16";x.fillRect(sx-pw/2,h-ph/2,pw,ph);
-   }
-  }
   // The doorway is rendered by the wall raycast itself.
   // The opening is the exact north-wall tile from x=10 to x=11.
   const doorX=10.5,doorY=0,doorW=1,doorH=1.9;
