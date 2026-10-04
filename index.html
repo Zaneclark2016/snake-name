@@ -96,6 +96,7 @@ function draw(){anim+=.045;
    }
   }
  }
+ {
   const lights=[[2.5,2.2],[5.5,2.2],[8.5,2.2],[11.5,2.2],[7.5,6.5]];
   for(const [lx,ly] of lights){
    let dx=lx-p.x,dy=ly-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;
