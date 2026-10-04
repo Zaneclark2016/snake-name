@@ -58,16 +58,32 @@ function draw(){anim+=.045;
  if(gameMode==="lobby"){
   let ceiling=x.createLinearGradient(0,0,0,h);ceiling.addColorStop(0,"#07101b");ceiling.addColorStop(.7,"#101d2a");ceiling.addColorStop(1,"#1a2b38");x.fillStyle=ceiling;x.fillRect(0,0,W,h);
   let floor=x.createLinearGradient(0,h,0,H);floor.addColorStop(0,"#263b47");floor.addColorStop(.55,"#1b2d38");floor.addColorStop(1,"#101c24");x.fillStyle=floor;x.fillRect(0,h,W,H-h);
-  for(let i=-2;i<=2;i++){
-   let lx=W/2+i*W*.2,ly=H*.18+Math.abs(i)*H*.025;
-   x.save();x.globalAlpha=.16;x.shadowBlur=35;x.shadowColor="#8ff7ff";x.fillStyle="#8ff7ff";x.beginPath();x.ellipse(lx,ly+28,W*.075,28,0,0,Math.PI*2);x.fill();x.restore();
-   x.save();x.shadowBlur=18;x.shadowColor="#dfffff";x.fillStyle="#dfffff";x.beginPath();x.roundRect(lx-W*.045,ly,W*.09,9,5);x.fill();x.fillStyle="#9eefff";x.fillRect(lx-W*.028,ly+9,W*.056,3);x.restore();
-  }
+  // The lamps are rendered from world coordinates below so they move correctly with the camera.
  }else{
   let sky=x.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#5ec8ff");sky.addColorStop(.55,"#a8e6ff");sky.addColorStop(1,"#e8f9ff");x.fillStyle=sky;x.fillRect(0,0,W,h);
   let ground=x.createLinearGradient(0,h,0,H);ground.addColorStop(0,"#9dcc72");ground.addColorStop(.5,"#b9df86");ground.addColorStop(1,"#d7eea8");x.fillStyle=ground;x.fillRect(0,h,W,H-h);
  }
  let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a)*Math.cos(a-p.a);z[i]=d;let wh=Math.min(H*2,H/(d*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}
+ if(gameMode==="lobby"){
+  const lights=[[2.5,2.2],[5.5,2.2],[8.5,2.2],[11.5,2.2],[7.5,6.5]];
+  for(const [lx,ly] of lights){
+   let dx=lx-p.x,dy=ly-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;
+   while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;
+   if(Math.abs(a)<FOV*.62){
+    let cd=d*Math.cos(a),sx=(.5+a/FOV)*W;
+    if(cd>.2&&cd<24){
+     let sy=h-H/(cd*.72)*.34,sz=Math.max(5,Math.min(70,H/(cd*1.8))),zi=Math.max(0,Math.min(n-1,~~(sx/2)));
+     if(cd<=z[zi]+.1){
+      x.save();x.globalAlpha=Math.max(.18,Math.min(.75,1-d/14));x.shadowBlur=22;x.shadowColor="#8ff7ff";x.fillStyle="#8ff7ff";
+      x.beginPath();x.ellipse(sx,sy+sz*.55,sz*1.8,sz*.42,0,0,Math.PI*2);x.fill();x.restore();
+      x.save();x.shadowBlur=16;x.shadowColor="#dfffff";x.fillStyle="#dfffff";
+      x.beginPath();x.roundRect(sx-sz*1.2,sy-sz*.14,sz*2.4,sz*.28,sz*.14);x.fill();
+      x.fillStyle="#9eefff";x.fillRect(sx-sz*.7,sy+sz*.14,sz*1.4,sz*.08);x.restore();
+     }
+    }
+   }
+  }
+ }
  Object.values(players).filter(q=>q.id!==myId&&q.mode===gameMode).forEach(q=>{
   let dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(Math.abs(a)>FOV*.7)return;
   let cd=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.4,H/(cd*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd<=z[zi]+.1){
