@@ -46,7 +46,7 @@ function begin(){
  let host=new URLSearchParams(location.search).get("host");
  loadPeer(ok=>{if(!run)return;if(ok){if(host){joinHost(host)}else{setupHost()}}else{statusEl.textContent="LOCAL";myId="local";players[myId]={id:myId,x:p.x,y:p.y,a:p.a,color:"#65eaff",mode:"lobby"};updateCount()}});
 }
-function move(dx,dy){let nx=p.x+dx,ny=p.y+dy;if(!wall(nx,p.y))p.x=nx;if(!wall(p.x,ny))p.y=ny}
+function move(dx,dy){const r=.22;let nx=p.x+dx,ny=p.y+dy;if(!wall(nx-r,p.y)&&!wall(nx+r,p.y)&&!wall(nx,p.y-r)&&!wall(nx,p.y+r))p.x=nx;if(!wall(p.x,ny-r)&&!wall(p.x,ny+r)&&!wall(p.x-r,ny)&&!wall(p.x+r,ny))p.y=ny}
 function update(dt){
  let mx=0,my=0;if(gameMode==="lobby"&&p.y<1.7){enterPhysicalArena();return}if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a||keys.arrowleft)mx--;if(keys.d||keys.arrowright)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;
  mx+=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.18*dt*60,fx=Math.cos(p.a),fy=Math.sin(p.a),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);
@@ -55,7 +55,7 @@ function update(dt){
 }
 function draw(){anim+=.045;
  const realX=p.x,realY=p.y,realA=p.a;
- if(gameMode==="lobby"){const camDist=2.0,camAngle=realA+Math.PI*.75;p.x=realX-Math.cos(camAngle)*camDist;p.y=realY-Math.sin(camAngle)*camDist;p.a=camAngle;}
+ if(gameMode==="lobby"){const camDist=1.15,camAngle=realA+Math.PI*.75;p.x=realX-Math.cos(camAngle)*camDist;p.y=realY-Math.sin(camAngle)*camDist;p.a=camAngle;}
  let h=gameMode==="lobby"?H*.42:H/2;
  if(gameMode==="lobby"){
   let ceiling=x.createLinearGradient(0,0,0,h);ceiling.addColorStop(0,"#07101b");ceiling.addColorStop(.7,"#101d2a");ceiling.addColorStop(1,"#1a2b38");x.fillStyle=ceiling;x.fillRect(0,0,W,h);
