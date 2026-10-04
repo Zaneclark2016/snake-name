@@ -59,8 +59,8 @@ function update(dt){
  netClock+=dt;if(hostConn&&hostConn.open&&netClock>.10){netClock=0;hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a,mode:gameMode})}
 }
 function draw(){anim+=.045;
- const realX=p.x,realY=p.y,realA=p.a;
- if(gameMode==="lobby"){const camDist=2.0,camAngle=realA+Math.PI*.75;p.x=realX-Math.cos(camAngle)*camDist;p.y=realY-Math.sin(camAngle)*camDist;p.a=camAngle;}
+ const originalX=p.x,originalY=p.y,originalA=p.a;
+ if(gameMode==="lobby"){const camDist=2.0,camAngle=realA+Math.PI*.75;p.x=originalX-Math.cos(camAngle)*camDist;p.y=originalY-Math.sin(camAngle)*camDist;p.a=camAngle;}
  let h=gameMode==="lobby"?H*.42:H/2;
  if(gameMode==="lobby"){
   let ceiling=x.createLinearGradient(0,0,0,h);ceiling.addColorStop(0,"#07101b");ceiling.addColorStop(.7,"#101d2a");ceiling.addColorStop(1,"#1a2b38");x.fillStyle=ceiling;x.fillRect(0,0,W,h);
@@ -129,9 +129,10 @@ function draw(){anim+=.045;
    x.fillStyle="#07111e";x.fillRect(-wh*.24,-wh*.16,wh*.48,wh*.045);x.fillStyle="#fff";x.font=Math.max(11,wh*.11)+"px system-ui";x.textAlign="center";x.fillText(q.id.slice(-5),0,-wh*.21);x.restore();
   }
  });
- if(gameMode==="lobby"){let dx=realX-p.x,dy=realY-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(d>.05&&Math.abs(a)<FOV*.72){let cd=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.2,H/(Math.max(.2,cd)*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd<=z[zi]+.1){x.save();x.translate(sx,h-wh*.15);x.fillStyle="#567a58";x.strokeStyle="#263d2b";x.lineWidth=Math.max(1,wh*.018);x.beginPath();x.arc(0,-wh*.02,wh*.14,0,7);x.fill();x.stroke();x.fillStyle="#304b35";x.fillRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.strokeRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.fillStyle="#73966b";x.fillRect(-wh*.19,wh*.19,wh*.38,wh*.065);x.fillStyle="#243326";x.fillRect(-wh*.12,wh*.53,wh*.09,wh*.25);x.fillRect(wh*.03,wh*.53,wh*.09,wh*.25);x.restore();}}}else{x.save();x.translate(W/2,H*.88);x.fillStyle="#243747";x.strokeStyle="#0b1822";x.lineWidth=4;x.beginPath();x.rect(-50,-60,100,110);x.fill();x.stroke();x.fillStyle="#65eaff";x.fillRect(-30,-30,60,12);x.fillRect(-18,-5,36,7);x.fillStyle="#40596b";x.fillRect(-35,25,70,18);x.restore();}
- p.x=realX;p.y=realY;p.a=realA;
+ if(gameMode==="lobby"){let dx=originalX-p.x,dy=originalY-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(d>.05&&Math.abs(a)<FOV*.72){let cd=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.2,H/(Math.max(.2,cd)*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd<=z[zi]+.1){x.save();x.translate(sx,h-wh*.15);x.fillStyle="#567a58";x.strokeStyle="#263d2b";x.lineWidth=Math.max(1,wh*.018);x.beginPath();x.arc(0,-wh*.02,wh*.14,0,7);x.fill();x.stroke();x.fillStyle="#304b35";x.fillRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.strokeRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.fillStyle="#73966b";x.fillRect(-wh*.19,wh*.19,wh*.38,wh*.065);x.fillStyle="#243326";x.fillRect(-wh*.12,wh*.53,wh*.09,wh*.25);x.fillRect(wh*.03,wh*.53,wh*.09,wh*.25);x.restore();}}}else{x.save();x.translate(W/2,H*.88);x.fillStyle="#243747";x.strokeStyle="#0b1822";x.lineWidth=4;x.beginPath();x.rect(-50,-60,100,110);x.fill();x.stroke();x.fillStyle="#65eaff";x.fillRect(-30,-30,60,12);x.fillRect(-18,-5,36,7);x.fillStyle="#40596b";x.fillRect(-35,25,70,18);x.restore();}
+ p.x=originalX;p.y=originalY;p.a=originalA;
  if(gameMode!=="lobby"){x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.moveTo(W/2-10,H/2);x.lineTo(W/2+10,H/2);x.moveTo(W/2,H/2-10);x.lineTo(W/2,H/2+10);x.stroke();}
+}
 function loop(t){if(!run)return;let dt=(t-last)/1000;last=t;if(!Number.isFinite(dt)||dt<=0)dt=1/60;dt=Math.min(.05,dt);try{update(dt);draw()}catch(e){run=false;statusEl.textContent="ERROR: "+(e&&e.message?e.message:"GAME ERROR");console.error(e);return}requestAnimationFrame(loop)}
 addEventListener("keydown",e=>{let k=e.key;if(k==="ArrowUp"||k==="ArrowDown"||k==="ArrowLeft"||k==="ArrowRight"||k==="w"||k==="a"||k==="s"||k==="d"){e.preventDefault();keys[k.toLowerCase()]=1}});addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=0});
 let mt=null,joyBase=null;
