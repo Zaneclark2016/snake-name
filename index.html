@@ -95,7 +95,7 @@ function draw(){anim+=.045;
    if(lp0&&lp1&&rp0&&rp1){
     let zi=Math.max(0,Math.min(n-1,~~(((lp0.sx+lp1.sx+rp0.sx+rp1.sx)/4)/2)));
     let nearest=Math.min(lp0.cd,lp1.cd,rp0.cd,rp1.cd);
-    if(nearest<=z[zi]+.2){
+    if(nearest<=z[zi]+.2 || doorD<3.0){
      x.save();x.fillStyle="#050505";x.shadowBlur=18;x.shadowColor="#000";
      function doorPanel(a,b){
       x.beginPath();
