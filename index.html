@@ -93,16 +93,6 @@ function draw(){anim+=.045;
    }
    const lp0=doorPoint(left0),lp1=doorPoint(left1),rp0=doorPoint(right0),rp1=doorPoint(right1);
    if(lp0&&lp1&&rp0&&rp1){
-    // Fixed doorway frame stays visible even when the sliding panels are fully open.
-    const frameL=doorPoint(doorX-halfW),frameR=doorPoint(doorX+halfW);
-    if(frameL&&frameR){
-     x.save();
-     x.fillStyle="#111820";x.strokeStyle="#65eaff66";x.lineWidth=3;
-     x.fillRect(frameL.sx-5,frameL.top,10,frameL.bottom-frameL.top);
-     x.fillRect(frameR.sx-5,frameR.top,10,frameR.bottom-frameR.top);
-     x.strokeRect(Math.min(frameL.sx,frameR.sx),frameL.top,Math.abs(frameR.sx-frameL.sx),Math.min(frameL.bottom,frameR.bottom)-frameL.top);
-     x.restore();
-    }
     let zi=Math.max(0,Math.min(n-1,~~(((lp0.sx+lp1.sx+rp0.sx+rp1.sx)/4)/2)));
     let nearest=Math.min(lp0.cd,lp1.cd,rp0.cd,rp1.cd);
     if(doorD<24){
