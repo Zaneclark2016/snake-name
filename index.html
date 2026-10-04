@@ -77,7 +77,7 @@ function draw(){anim+=.045;
   if(Math.abs(da)<FOV*.7&&doorD>.2&&doorD<24){
    // Project the door as a real north-wall plane, not a camera-facing billboard.
    // Both panels stay anchored to y=.42 and only slide along the wall's x axis.
-   const gapW=doorW*(0.52*doorOpen);
+   const gapW=doorW*(0.61*doorOpen);
    const halfW=doorW/2;
    const panelW=halfW-gapW/2;
    const left0=doorX-halfW, left1=doorX-gapW/2;
