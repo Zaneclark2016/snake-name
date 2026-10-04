@@ -11,14 +11,14 @@ h1{font-size:42px;margin:0}.sub{color:#abc;margin-bottom:20px}button{padding:14p
 </head><body>
 <canvas id="g"></canvas>
 <div id="hud" class="hidden"><b id="status" class="pill">CONNECTING...</b><b id="players" class="pill">PLAYERS 1</b></div>
-<div id="menu"><div class="panel"><h1>NEON ARENA</h1><p class="sub" id="sub">Shared online 3D arena.</p><button id="start">ENTER ARENA</button><div id="share" class="hidden"><p class="small">Share this link so other people join the same arena:</p><input id="invite" readonly><br><button id="copy">COPY INVITE</button></div><p class="small">Desktop: WASD/arrows. iPad: drag the left side to move and the right side to look.</p></div></div>
+<div id="menu"><div class="panel"><h1>NEON ARENA</h1><p class="sub" id="sub">Shared online 3D arena.</p><button id="start">ENTER ARENA</button><div id="share" class="hidden"><p class="small">Share this link so other people join the same arena:</p><input id="invite" readonly><br><button id="copy">COPY INVITE</button></div><p class="small">TV/desktop: arrow keys or WASD. iPad: drag the left side to move and the right side to look.</p></div></div>
 <script>
 const c=document.getElementById("g"),x=c.getContext("2d"),menu=document.getElementById("menu"),hud=document.getElementById("hud"),statusEl=document.getElementById("status"),playersEl=document.getElementById("players"),start=document.getElementById("start"),sub=document.getElementById("sub"),share=document.getElementById("share"),invite=document.getElementById("invite"),copy=document.getElementById("copy");
-let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[];
+let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[],netClock=0,frameClock=0;const TV_MODE=true,MAX_FPS=30,QUALITY=.52;
 const map=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],FOV=Math.PI/3,p={x:2.5,y:1.8,a:0};
-function size(){D=Math.min(devicePixelRatio||1,1.5);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
+function size(){D=QUALITY;W=innerWidth;H=innerHeight;c.width=Math.max(320,Math.floor(W*D));c.height=Math.max(180,Math.floor(H*D));x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
 function wall(a,b){return a<0||b<0||a>=15||b>=13||map[Math.floor(b)][Math.floor(a)]==="1"}
-function ray(a){let dx=Math.cos(a),dy=Math.sin(a),xx=p.x,yy=p.y,d=0;while(d<30){xx+=dx*.03;yy+=dy*.03;d+=.03;if(wall(xx,yy))break}return d}
+function ray(a){let dx=Math.cos(a),dy=Math.sin(a),xx=p.x,yy=p.y,d=0;while(d<24){xx+=dx*.06;yy+=dy*.06;d+=.06;if(wall(xx,yy))break}return d}
 function spawnPoint(){let spots=[[2.5,1.8],[7.5,6.5],[12.5,10.5],[11.5,2.5],[3.5,10.5],[7.5,2.5],[11.5,7.5]];return spots[Math.floor(Math.random()*spots.length)]}
 function send(o){if(hostConn&&hostConn.open)hostConn.send(o);for(const q of connections)if(q.open)q.send(o)}
 function snapshot(){let a=[];for(const id in players)a.push(players[id]);return a}
@@ -54,23 +54,23 @@ function update(dt){
  let mx=0,my=0;if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a)mx--;if(keys.d)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;
  mx+=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.075*dt*60,fx=Math.cos(p.a),fy=Math.sin(p.a),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);
  if(players[myId]){players[myId].x=p.x;players[myId].y=p.y;players[myId].a=p.a}
- if(hostConn&&hostConn.open)hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a});
+ netClock+=dt;if(hostConn&&hostConn.open&&netClock>.10){netClock=0;hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a})}
 }
 function draw(){
  let h=H/2,sky=x.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#5ec8ff");sky.addColorStop(.55,"#a8e6ff");sky.addColorStop(1,"#e8f9ff");x.fillStyle=sky;x.fillRect(0,0,W,h);
  let ground=x.createLinearGradient(0,h,0,H);ground.addColorStop(0,"#9dcc72");ground.addColorStop(.5,"#b9df86");ground.addColorStop(1,"#d7eea8");x.fillStyle=ground;x.fillRect(0,h,W,H-h);
- let n=Math.ceil(W/2),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a)*Math.cos(a-p.a);z[i]=d;let wh=Math.min(H*2,H/(d*.72)),yy=h-wh/2,sh=Math.max(.15,1-d/16);x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*2,yy,2,wh)}
- Object.values(players).filter(q=>q.id!==myId).sort((a,b)=>Math.hypot(b.x-p.x,b.y-p.y)-Math.hypot(a.x-p.x,a.y-p.y)).forEach(q=>{
+ let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a)*Math.cos(a-p.a);z[i]=d;let wh=Math.min(H*2,H/(d*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}
+ Object.values(players).filter(q=>q.id!==myId).forEach(q=>{
   let dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(Math.abs(a)>FOV*.7)return;
   let cd=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.4,H/(cd*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd<=z[zi]+.1){
-   x.save();x.translate(sx,h-wh*.15);x.shadowColor=q.color;x.shadowBlur=18;x.fillStyle=q.color;x.beginPath();x.arc(0,wh*.08,wh*.15,0,7);x.fill();x.shadowBlur=0;x.fillRect(-wh*.18,wh*.2,wh*.36,wh*.34);
+   x.save();x.translate(sx,h-wh*.15);x.fillStyle=q.color;x.beginPath();x.arc(0,wh*.08,wh*.15,0,7);x.fill();x.fillRect(-wh*.18,wh*.2,wh*.36,wh*.34);
    x.fillStyle="#07111e";x.fillRect(-wh*.24,-wh*.16,wh*.48,wh*.045);x.fillStyle="#fff";x.font=Math.max(11,wh*.11)+"px system-ui";x.textAlign="center";x.fillText(q.id.slice(-5),0,-wh*.21);x.restore();
   }
  });
- x.save();x.translate(W/2,H*.88);x.fillStyle="#243747";x.strokeStyle="#0b1822";x.lineWidth=4;x.beginPath();x.roundRect(-50,-60,100,110,18);x.fill();x.stroke();x.fillStyle="#65eaff";x.shadowColor="#65eaff";x.shadowBlur=15;x.fillRect(-30,-30,60,12);x.fillRect(-18,-5,36,7);x.shadowBlur=0;x.fillStyle="#40596b";x.fillRect(-35,25,70,18);x.restore();
+ x.save();x.translate(W/2,H*.88);x.fillStyle="#243747";x.strokeStyle="#0b1822";x.lineWidth=4;x.beginPath();x.roundRect(-50,-60,100,110,18);x.fill();x.stroke();x.fillStyle="#65eaff";x.fillRect(-30,-30,60,12);x.fillRect(-18,-5,36,7);x.fillStyle="#40596b";x.fillRect(-35,25,70,18);x.restore();
  x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.moveTo(W/2-10,H/2);x.lineTo(W/2+10,H/2);x.moveTo(W/2,H/2-10);x.lineTo(W/2,H/2+10);x.stroke();
 }
-function loop(t){if(!run)return;let dt=Math.min(.033,(t-last)/1000);last=t;update(dt);draw();requestAnimationFrame(loop)}
+function loop(t){if(!run)return;let dt=(t-last)/1000;if(dt<1/MAX_FPS){requestAnimationFrame(loop);return}dt=Math.min(.05,dt);last=t;update(dt);draw();requestAnimationFrame(loop)}
 addEventListener("keydown",e=>keys[e.key.toLowerCase()]=1);addEventListener("keyup",e=>keys[e.key.toLowerCase()]=0);
 c.addEventListener("pointerdown",e=>{if(!run)return;if(e.clientX<W*.42)mt={id:e.pointerId,x:e.clientX,y:e.clientY};else look={id:e.pointerId,x:e.clientX,y:e.clientY}});
 let mt=null;
