@@ -77,7 +77,7 @@ function draw(){anim+=.045;
   if(Math.abs(da)<FOV*.7&&doorD>.2&&doorD<24){
    // Project the door as a real north-wall plane, not a camera-facing billboard.
    // Both panels stay anchored to y=.42 and only slide along the wall's x axis.
-   const gapW=doorW*(0.58*doorOpen);
+   const gapW=doorW*(0.46*doorOpen);
    const halfW=doorW/2;
    const panelW=halfW-gapW/2;
    const left0=doorX-halfW, left1=doorX-gapW/2;
@@ -105,7 +105,7 @@ function draw(){anim+=.045;
     }
     let zi=Math.max(0,Math.min(n-1,~~(((lp0.sx+lp1.sx+rp0.sx+rp1.sx)/4)/2)));
     let nearest=Math.min(lp0.cd,lp1.cd,rp0.cd,rp1.cd);
-    if(true){
+    if(doorD<24){
      x.save();
      // Keep the doorway visible while approaching instead of letting the wall depth buffer hide it.
      x.fillStyle="#050505";x.shadowBlur=18;x.shadowColor="#000";
