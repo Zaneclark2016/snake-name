@@ -63,9 +63,10 @@ function draw(){anim+=.045;
  let renderX=originalX,renderY=originalY,renderA=originalA;
  let cameraLift=0;
  if(gameMode==="lobby"){
-  const camDist=2.0;
-  renderX=originalX-Math.cos(originalA)*camDist;
-  renderY=originalY-Math.sin(originalA)*camDist;
+  const camDist=2.0,shoulderOffset=.8;
+  const rightX=-Math.sin(originalA),rightY=Math.cos(originalA);
+  renderX=originalX-Math.cos(originalA)*camDist+rightX*shoulderOffset;
+  renderY=originalY-Math.sin(originalA)*camDist+rightY*shoulderOffset;
   renderA=originalA;
   cameraLift=H*.08;
  }
