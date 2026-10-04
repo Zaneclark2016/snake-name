@@ -52,7 +52,7 @@ function move(dx,dy){const r=.22;let nx=p.x+dx,ny=p.y+dy;if(!wall(nx-r,p.y)&&!wa
 function update(dt){
  updateDoor(dt);
  let mx=0,my=0;if(gameMode==="lobby"&&p.y<1.7&&doorOpen>.92){enterPhysicalArena();return}if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a||keys.arrowleft)mx--;if(keys.d||keys.arrowright)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;
- mx-=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.18*dt*60,moveA=gameMode==="lobby"?p.a+Math.PI*.75:p.a,fx=Math.cos(moveA),fy=Math.sin(moveA),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);
+ mx+=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.18*dt*60,moveA=gameMode==="lobby"?p.a+Math.PI*.75:p.a,fx=Math.cos(moveA),fy=Math.sin(moveA),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);
  if(players[myId]){players[myId].x=p.x;players[myId].y=p.y;players[myId].a=p.a;players[myId].mode=gameMode}
  netClock+=dt;if(hostConn&&hostConn.open&&netClock>.10){netClock=0;hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a,mode:gameMode})}
 }
