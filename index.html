@@ -107,10 +107,20 @@ function draw(){anim+=.045;
      }
      doorPanel(lp0,lp1);doorPanel(rp0,rp1);
      if(doorOpen<.35){
-      let cx=(lp0.sx+lp1.sx+rp0.sx+rp1.sx)/4,cy=(lp0.top+lp1.top+rp0.top+rp1.top)/4;
-      let avgH=((lp0.bottom-lp0.top)+(lp1.bottom-lp1.top)+(rp0.bottom-rp0.top)+(rp1.bottom-rp1.top))/4;
-      x.shadowBlur=8;x.shadowColor="#fff";x.fillStyle="#fff";x.font=Math.max(10,Math.min(24,avgH*.15))+"px system-ui";x.fontWeight="900";x.textAlign="center";x.textBaseline="middle";
-      x.fillText("EXIT HERE",cx,cy);
+      // Project the label from the same north-wall plane as the door.
+      // This keeps the text attached to the wall instead of facing the camera.
+      const tp=doorPoint(doorX),tl=doorPoint(doorX-.08),tr=doorPoint(doorX+.08);
+      if(tp&&tl&&tr){
+       const avgH=Math.max(10,Math.min(24,(tp.bottom-tp.top)*.15));
+       const wallAngle=Math.atan2(tr.sx-tl.sx,tr.top-tl.top)-Math.PI/2;
+       x.save();
+       x.translate(tp.sx,h);
+       x.rotate(wallAngle);
+       x.shadowBlur=8;x.shadowColor="#fff";x.fillStyle="#fff";
+       x.font=avgH+"px system-ui";x.fontWeight="900";x.textAlign="center";x.textBaseline="middle";
+       x.fillText("EXIT HERE",0,0);
+       x.restore();
+      }
      }
      x.restore();
     }
