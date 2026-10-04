@@ -14,7 +14,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}#hud{position:fixe
 const c=document.getElementById("g"),x=c.getContext("2d"),hud=document.getElementById("hud"),statusEl=document.getElementById("status"),playersEl=document.getElementById("players"),joystick=document.getElementById("joystick"),joystickThumb=document.getElementById("joystickThumb");
 let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[],netClock=0,frameClock=0,anim=0;const TV_MODE=true,MAX_FPS=30,QUALITY=.52;
 const arenaMap=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],lobbyMap=["111111111101111111111","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","111111111111111111111"],FOV=Math.PI/2.85,p={x:7.5,y:10.5,a:-Math.PI/2};let gameMode="lobby";let doorOpen=0;function activeMap(){return gameMode==="lobby"?lobbyMap:arenaMap}
-function doorBlocking(a,b){if(gameMode!=="lobby"||doorOpen>=.98)return false;return a>=10&&a<=11&&b>=0&&b<=1}
+function doorBlocking(a,b){if(gameMode!=="lobby"||b<0||b>1||a<10||a>11||doorOpen>=.98)return false;const gapW=1*Math.min(.75,.75*doorOpen/.92),left=10.5-gapW/2,right=10.5+gapW/2;return a<left||a>right}
 function updateDoor(dt){if(gameMode!=="lobby"){doorOpen=0;return}let d=Math.hypot(p.x-10,p.y-.9);let target=d<3.0?1:0;doorOpen+=(target-doorOpen)*Math.min(1,dt*4.5)}
 function size(){D=QUALITY;W=innerWidth;H=innerHeight;c.width=Math.max(320,Math.floor(W*D));c.height=Math.max(180,Math.floor(H*D));x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
 function wall(a,b){return a<0||b<0||a<0||b<0||a>=activeMap()[0].length||b>=activeMap().length||activeMap()[Math.floor(b)][Math.floor(a)]==="1"||doorBlocking(a,b)}
@@ -68,64 +68,32 @@ function draw(){anim+=.045;
   let sky=x.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#5ec8ff");sky.addColorStop(.55,"#a8e6ff");sky.addColorStop(1,"#e8f9ff");x.fillStyle=sky;x.fillRect(0,0,W,h);
   let ground=x.createLinearGradient(0,h,0,H);ground.addColorStop(0,"#9dcc72");ground.addColorStop(.5,"#b9df86");ground.addColorStop(1,"#d7eea8");x.fillStyle=ground;x.fillRect(0,h,W,H-h);
  }
- let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a)*Math.cos(a-p.a);z[i]=d;let wh=Math.min(H*2,H/(d*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}
+ let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a),ca=Math.cos(a-p.a),cd=d*ca;z[i]=cd;let hitX=p.x+Math.cos(a)*d,hitY=p.y+Math.sin(a)*d;let doorHit=gameMode==="lobby"&&hitY<=.08&&hitY>=-.08&&hitX>=10&&hitX<=11&&doorBlocking(hitX,hitY);let wh=Math.min(H*2,H/(Math.max(.2,cd)*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);if(doorHit){x.fillStyle="#050505";x.fillRect(i*4,yy,4,wh);if(i%2===0){x.fillStyle="rgba(70,70,70,.35)";x.fillRect(i*4,yy+wh*.08,2,Math.max(1,wh*.015))}}else{x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}}
  if(gameMode==="lobby"){
-  // Automatic sensor door at the north exit. The two panels slide into the side walls as the player approaches.
-  const doorX=10.5,doorY=0,doorW=1.0,doorH=1.9;
-  let ddx=doorX-p.x,ddy=doorY-p.y,doorD=Math.hypot(ddx,ddy),da=Math.atan2(ddy,ddx)-p.a;
-  while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
-  if(Math.abs(da)<FOV*.7&&doorD>.2&&doorD<24){
-   // Project the door as a real north-wall plane, not a camera-facing billboard.
-   // Both panels stay anchored to y=.42 and only slide along the wall's x axis.
-   const gapW=doorW*Math.min(0.75,0.75*doorOpen/0.92);
-   const halfW=doorW/2;
-   const panelW=halfW-gapW/2;
-   const left0=doorX-halfW, left1=doorX-gapW/2;
-   const right0=doorX+gapW/2, right1=doorX+halfW;
-   function doorPoint(wx){
-    let dx=wx-p.x,dy=doorY-p.y,a=Math.atan2(dy,dx)-p.a;
-    while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;
-    let cd=Math.hypot(dx,dy)*Math.cos(a);
-    if(cd<=.2)return null;
-    let sx=(.5+a/FOV)*W;
-    let dh=Math.min(H*1.5,H/(Math.max(.2,cd)*.72)*doorH);
-    return {sx,top:h-dh/2,bottom:h+dh/2,cd};
-   }
-   const lp0=doorPoint(left0),lp1=doorPoint(left1),rp0=doorPoint(right0),rp1=doorPoint(right1);
-   if(lp0&&lp1&&rp0&&rp1){
-    let zi=Math.max(0,Math.min(n-1,~~(((lp0.sx+lp1.sx+rp0.sx+rp1.sx)/4)/2)));
-    let nearest=Math.min(lp0.cd,lp1.cd,rp0.cd,rp1.cd);
-    if(doorD<24){
+  // The doorway is rendered by the wall raycast itself.
+  // The opening is the exact north-wall tile from x=10 to x=11.
+  const doorX=10.5,doorY=0,doorW=1,doorH=1.9;
+  const doorD=Math.hypot(doorX-p.x,doorY-p.y);
+  if(doorD<24&&doorOpen<.35){
+   const dx=doorX-p.x,dy=doorY-p.y;
+   let da=Math.atan2(dy,dx)-p.a;
+   while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
+   if(Math.abs(da)<FOV*.7){
+    // Label is projected from the same wall plane as the doorway.
+    const cd=doorD*Math.cos(da);
+    if(cd>.2){
+     const sx=(.5+da/FOV)*W;
+     const sy=h-H/(cd*.72)*(.72);
      x.save();
-     // Keep the doorway visible while approaching instead of letting the wall depth buffer hide it.
-     x.fillStyle="#050505";x.shadowBlur=18;x.shadowColor="#000";
-     function doorPanel(a,b){
-      x.beginPath();
-      x.moveTo(a.sx,a.top);x.lineTo(b.sx,b.top);x.lineTo(b.sx,b.bottom);x.lineTo(a.sx,a.bottom);x.closePath();
-      x.fill();x.strokeStyle="#202020";x.lineWidth=Math.max(1,(a.bottom-a.top)*.018);x.stroke();
-      x.globalAlpha=.9;x.fillStyle="#333";
-      x.beginPath();x.moveTo(a.sx+3,a.top+(a.bottom-a.top)*.08);x.lineTo(b.sx-3,b.top+(b.bottom-b.top)*.08);x.lineTo(b.sx-3,b.top+(b.bottom-b.top)*.092);x.lineTo(a.sx+3,a.top+(a.bottom-a.top)*.092);x.closePath();x.fill();
-      x.globalAlpha=1;
-     }
-     doorPanel(lp0,lp1);doorPanel(rp0,rp1);
-     if(doorOpen<.35){
-      // Project the label from the same north-wall plane as the door.
-      // This keeps the text attached to the wall instead of facing the camera.
-      const tp=doorPoint(doorX),tl=doorPoint(doorX-.08),tr=doorPoint(doorX+.08);
-      if(tp&&tl&&tr){
-       const avgH=Math.max(10,Math.min(24,(tp.bottom-tp.top)*.15));
-       x.save();
-       x.translate(tp.sx,h);
-       x.shadowBlur=8;x.shadowColor="#fff";x.fillStyle="#fff";
-       x.font=avgH+"px system-ui";x.fontWeight="900";x.textAlign="center";x.textBaseline="middle";
-       x.fillText("EXIT HERE",0,0);
-       x.restore();
-      }
-     }
+     x.shadowBlur=8;x.shadowColor="#fff";x.fillStyle="#fff";
+     x.font=Math.max(10,Math.min(24,H/(cd*.72)*.12))+"px system-ui";
+     x.fontWeight="900";x.textAlign="center";x.textBaseline="middle";
+     x.fillText("EXIT HERE",sx,sy);
      x.restore();
     }
    }
   }
+ }
   const lights=[[2.5,2.2],[5.5,2.2],[8.5,2.2],[11.5,2.2],[7.5,6.5]];
   for(const [lx,ly] of lights){
    let dx=lx-p.x,dy=ly-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;
