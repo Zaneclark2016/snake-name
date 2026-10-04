@@ -75,7 +75,7 @@ function draw(){anim+=.045;
   let ddx=doorX-p.x,ddy=doorY-p.y,doorD=Math.hypot(ddx,ddy),da=Math.atan2(ddy,ddx)-p.a;
   while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
   if(Math.abs(da)<FOV*.7&&doorD>.2&&doorD<24){
-   let cd=doorD*Math.cos(da),sx=(.5+da/FOV)*W,dh=Math.min(H*1.5,H/(Math.max(.2,cd)*.72)*1.9),top=h-dh,dw=Math.max(8,Math.min(W*.24,dh*.96)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));
+   let cd=doorD*Math.cos(da),sx=(.5+da/FOV)*W,dh=Math.min(H*1.5,H/(Math.max(.2,cd)*.72)*1.9),top=h-dh/2,dw=Math.max(8,Math.min(W*.24,dh*.96)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));
    if(cd<=z[zi]+.15){
     let gap=dw*doorOpen*.98,half=dw/2,panelW=Math.max(2,half-gap/2);
     x.save();x.shadowBlur=18;x.shadowColor="#000";x.fillStyle="#050505";
