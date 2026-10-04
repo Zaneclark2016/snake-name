@@ -6,7 +6,6 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:
 canvas{width:100%;height:100%;display:block;touch-action:none}#hud{position:fixed;inset:0;pointer-events:none}.pill{position:absolute;top:12px;padding:8px 12px;background:#06101dcc;border-radius:12px;font-weight:800}#players{right:12px}#status{left:12px}.hidden{display:none!important}
 #tvpad{display:none}#joystick{position:fixed;left:28px;bottom:28px;width:132px;height:132px;border-radius:50%;pointer-events:none;background:#07111eb8;border:2px solid #65eaff88;box-shadow:0 0 18px #65eaff33}#joystickThumb{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px;border-radius:50%;background:#65eaffaa;border:2px solid #fff;box-shadow:0 0 14px #65eaff88;transform:translate(0,0)}@media(max-width:899px){#joystick{display:block}}
 </style>
-
 </head><body>
 <canvas id="g"></canvas>
 <div id="hud"><b id="status" class="pill">CONNECTING...</b><b id="players" class="pill">PLAYERS 1</b><div id="joystick"><div id="joystickThumb"></div></div></div>
@@ -63,12 +62,12 @@ function draw(){anim+=.045;
  let renderX=originalX,renderY=originalY,renderA=originalA;
  let cameraLift=0;
  if(gameMode==="lobby"){
-  const camDist=2.0,shoulderOffset=.4;
+  const camDist=2.0,shoulderOffset=-.3;
   const rightX=-Math.sin(originalA),rightY=Math.cos(originalA);
   renderX=originalX-Math.cos(originalA)*camDist+rightX*shoulderOffset;
   renderY=originalY-Math.sin(originalA)*camDist+rightY*shoulderOffset;
   renderA=originalA;
-  cameraLift=H*.08;
+  cameraLift=H*.10;
  }
  let h=gameMode==="lobby"?H*.42-cameraLift:H/2;
  if(gameMode==="lobby"){
