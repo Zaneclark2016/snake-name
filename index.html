@@ -13,9 +13,9 @@ canvas{width:100%;height:100%;display:block;touch-action:none}#hud{position:fixe
 <script>
 const c=document.getElementById("g"),x=c.getContext("2d"),hud=document.getElementById("hud"),statusEl=document.getElementById("status"),playersEl=document.getElementById("players"),joystick=document.getElementById("joystick"),joystickThumb=document.getElementById("joystickThumb");
 let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[],netClock=0,frameClock=0,anim=0;const TV_MODE=true,MAX_FPS=30,QUALITY=.52;
-const arenaMap=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],lobbyMap=["111111101111111","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","111111111111111"],FOV=Math.PI/2.85,p={x:7.5,y:10.5,a:-Math.PI/2};let gameMode="lobby";function activeMap(){return gameMode==="lobby"?lobbyMap:arenaMap}
+const arenaMap=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],lobbyMap=["111111111111111111111","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","111111111011111111111"],FOV=Math.PI/2.85,p={x:7.5,y:10.5,a:-Math.PI/2};let gameMode="lobby";function activeMap(){return gameMode==="lobby"?lobbyMap:arenaMap}
 function size(){D=QUALITY;W=innerWidth;H=innerHeight;c.width=Math.max(320,Math.floor(W*D));c.height=Math.max(180,Math.floor(H*D));x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
-function wall(a,b){return a<0||b<0||a>=15||b>=13||activeMap()[Math.floor(b)][Math.floor(a)]==="1"}
+function wall(a,b){return a<0||b<0||a<0||b<0||a>=activeMap()[0].length||b>=activeMap().length||activeMap()[Math.floor(b)][Math.floor(a)]==="1"}
 function ray(a){let dx=Math.cos(a),dy=Math.sin(a),xx=p.x,yy=p.y,d=0;while(d<24){xx+=dx*.06;yy+=dy*.06;d+=.06;if(wall(xx,yy))break}return d}
 function spawnPoint(){let spots=[[2.5,1.8],[7.5,6.5],[12.5,10.5],[11.5,2.5],[3.5,10.5],[7.5,2.5],[11.5,7.5]];return spots[Math.floor(Math.random()*spots.length)]}function enterPhysicalArena(){if(gameMode!=="lobby")return;gameMode="arena";p.x=7.5;p.y=10.5;p.a=-Math.PI/2;if(players[myId])players[myId].mode="arena";if(hostConn&&hostConn.open)hostConn.send({type:"mode",id:myId,mode:"arena"});if(isHost)send({type:"players",players:snapshot()});}
 function send(o){if(hostConn&&hostConn.open)hostConn.send(o);for(const q of connections)if(q.open)q.send(o)}
@@ -55,7 +55,7 @@ function update(dt){
 }
 function draw(){anim+=.045;
  const realX=p.x,realY=p.y,realA=p.a;
- if(gameMode==="lobby"){const camDist=1.15,camAngle=realA+Math.PI*.75;p.x=realX-Math.cos(camAngle)*camDist;p.y=realY-Math.sin(camAngle)*camDist;p.a=camAngle;}
+ if(gameMode==="lobby"){const camDist=2.0,camAngle=realA+Math.PI*.75;p.x=realX-Math.cos(camAngle)*camDist;p.y=realY-Math.sin(camAngle)*camDist;p.a=camAngle;}
  let h=gameMode==="lobby"?H*.42:H/2;
  if(gameMode==="lobby"){
   let ceiling=x.createLinearGradient(0,0,0,h);ceiling.addColorStop(0,"#07101b");ceiling.addColorStop(.7,"#101d2a");ceiling.addColorStop(1,"#1a2b38");x.fillStyle=ceiling;x.fillRect(0,0,W,h);
