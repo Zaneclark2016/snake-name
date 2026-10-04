@@ -4,13 +4,13 @@
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:system-ui}body{touch-action:none}
 canvas{width:100%;height:100%;display:block}#hud{position:fixed;inset:0;pointer-events:none}.pill{position:absolute;top:12px;padding:8px 12px;background:#06101dcc;border-radius:12px;font-weight:800}#players{right:12px}#status{left:12px}.hidden{display:none!important}
-#menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#020712ee}.panel{width:min(88vw,460px);padding:30px;text-align:center;border:1px solid #5deaff55;border-radius:24px;background:#07111eee}
+#tvpad{position:fixed;left:22px;bottom:22px;pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:5px}#tvpad button{width:58px;height:48px;padding:0;margin:0;border:2px solid #ffffff88;border-radius:12px;background:#07111edd;color:#fff;font-size:25px;font-weight:900}#tvpad button:focus{outline:3px solid #65eaff;background:#17354a}#tvpad div{display:flex;gap:5px}@media(min-width:900px){#tvpad button{width:70px;height:55px}}#menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#020712ee}.panel{width:min(88vw,460px);padding:30px;text-align:center;border:1px solid #5deaff55;border-radius:24px;background:#07111eee}
 h1{font-size:42px;margin:0}.sub{color:#abc;margin-bottom:20px}button{padding:14px 22px;border:0;border-radius:14px;background:#65eaff;font-size:17px;font-weight:900;margin:5px}.small{font-size:13px;color:#8196aa;margin-top:15px;line-height:1.5}#invite{width:90%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #456;background:#0b1822;color:#fff}
 </style>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head><body>
 <canvas id="g"></canvas>
-<div id="hud" class="hidden"><b id="status" class="pill">CONNECTING...</b><b id="players" class="pill">PLAYERS 1</b></div>
+<div id="hud" class="hidden"><b id="status" class="pill">CONNECTING...</b><b id="players" class="pill">PLAYERS 1</b><div id="tvpad"><button data-k="ArrowUp">▲</button><div><button data-k="ArrowLeft">◀</button><button data-k="ArrowDown">▼</button><button data-k="ArrowRight">▶</button></div></div></div>
 <div id="menu"><div class="panel"><h1>NEON ARENA</h1><p class="sub" id="sub">Shared online 3D arena.</p><button id="start">ENTER ARENA</button><div id="share" class="hidden"><p class="small">Share this link so other people join the same arena:</p><input id="invite" readonly><br><button id="copy">COPY INVITE</button></div><p class="small">TV/desktop: arrow keys or WASD. iPad: drag the left side to move and the right side to look.</p></div></div>
 <script>
 const c=document.getElementById("g"),x=c.getContext("2d"),menu=document.getElementById("menu"),hud=document.getElementById("hud"),statusEl=document.getElementById("status"),playersEl=document.getElementById("players"),start=document.getElementById("start"),sub=document.getElementById("sub"),share=document.getElementById("share"),invite=document.getElementById("invite"),copy=document.getElementById("copy");
@@ -51,7 +51,7 @@ function begin(){
 start.onclick=begin;
 function move(dx,dy){let nx=p.x+dx,ny=p.y+dy;if(!wall(nx,p.y))p.x=nx;if(!wall(p.x,ny))p.y=ny}
 function update(dt){
- let mx=0,my=0;if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a)mx--;if(keys.d)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;
+ let mx=0,my=0;if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a||keys.arrowleft)mx--;if(keys.d||keys.arrowright)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;
  mx+=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.075*dt*60,fx=Math.cos(p.a),fy=Math.sin(p.a),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);
  if(players[myId]){players[myId].x=p.x;players[myId].y=p.y;players[myId].a=p.a}
  netClock+=dt;if(hostConn&&hostConn.open&&netClock>.10){netClock=0;hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a})}
@@ -71,7 +71,7 @@ function draw(){
  x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.moveTo(W/2-10,H/2);x.lineTo(W/2+10,H/2);x.moveTo(W/2,H/2-10);x.lineTo(W/2,H/2+10);x.stroke();
 }
 function loop(t){if(!run)return;let dt=(t-last)/1000;if(dt<1/MAX_FPS){requestAnimationFrame(loop);return}dt=Math.min(.05,dt);last=t;update(dt);draw();requestAnimationFrame(loop)}
-addEventListener("keydown",e=>keys[e.key.toLowerCase()]=1);addEventListener("keyup",e=>keys[e.key.toLowerCase()]=0);
+addEventListener("keydown",e=>{let k=e.key;if(k==="ArrowUp"||k==="ArrowDown"||k==="ArrowLeft"||k==="ArrowRight"||k==="w"||k==="a"||k==="s"||k==="d"){e.preventDefault();keys[k.toLowerCase()]=1}});addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=0});\ndocument.querySelectorAll("#tvpad button").forEach(b=>{let k=b.dataset.k.toLowerCase();b.addEventListener("pointerdown",e=>{e.preventDefault();keys[k]=1;b.focus()});b.addEventListener("pointerup",e=>{e.preventDefault();keys[k]=0});b.addEventListener("pointercancel",()=>keys[k]=0);b.addEventListener("pointerleave",()=>keys[k]=0);b.addEventListener("click",e=>{e.preventDefault()})});
 c.addEventListener("pointerdown",e=>{if(!run)return;if(e.clientX<W*.42)mt={id:e.pointerId,x:e.clientX,y:e.clientY};else look={id:e.pointerId,x:e.clientX,y:e.clientY}});
 let mt=null;
 c.addEventListener("pointermove",e=>{if(mt&&e.pointerId===mt.id){joy.x=Math.max(-1,Math.min(1,(e.clientX-mt.x)/70));joy.y=-Math.max(-1,Math.min(1,(e.clientY-mt.y)/70))}if(look&&e.pointerId===look.id){p.a+=(e.clientX-look.x)*.008;look.x=e.clientX}});
