@@ -75,18 +75,45 @@ function draw(){anim+=.045;
   let ddx=doorX-p.x,ddy=doorY-p.y,doorD=Math.hypot(ddx,ddy),da=Math.atan2(ddy,ddx)-p.a;
   while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
   if(Math.abs(da)<FOV*.7&&doorD>.2&&doorD<24){
-   let cd=doorD*Math.cos(da),sx=(.5+da/FOV)*W,dh=Math.min(H*1.5,H/(Math.max(.2,cd)*.72)*1.9),top=h-dh/2,dw=Math.max(8,Math.min(W*.24,dh*.96)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));
-   if(cd<=z[zi]+.15){
-    let gap=dw*doorOpen*.98,half=dw/2,panelW=Math.max(2,half-gap/2);
-    x.save();x.shadowBlur=18;x.shadowColor="#000";x.fillStyle="#050505";
-    x.fillRect(sx-half,top,panelW,dh);x.fillRect(sx+gap/2,top,panelW,dh);
-    x.strokeStyle="#202020";x.lineWidth=Math.max(1,dh*.018);x.strokeRect(sx-half,top,panelW,dh);x.strokeRect(sx+gap/2,top,panelW,dh);
-    x.globalAlpha=.9;x.fillStyle="#333";x.fillRect(sx-half+3,top+dh*.08,Math.max(2,panelW-6),Math.max(2,dh*.012));x.fillRect(sx+gap/2+3,top+dh*.08,Math.max(2,panelW-6),Math.max(2,dh*.012));
-    if(doorOpen<.35){
-     x.shadowBlur=8;x.shadowColor="#fff";x.fillStyle="#fff";x.font=Math.max(10,Math.min(24,dh*.15))+"px system-ui";x.fontWeight="900";x.textAlign="center";x.textBaseline="middle";
-     x.fillText("EXIT HERE",sx,top+dh*.52);
+   // Project the door as a real north-wall plane, not a camera-facing billboard.
+   // Both panels stay anchored to y=.42 and only slide along the wall's x axis.
+   const gapW=doorW*doorOpen*.98;
+   const halfW=doorW/2;
+   const panelW=halfW-gapW/2;
+   const left0=doorX-halfW, left1=doorX-gapW/2;
+   const right0=doorX+gapW/2, right1=doorX+halfW;
+   function doorPoint(wx){
+    let dx=wx-p.x,dy=doorY-p.y,a=Math.atan2(dy,dx)-p.a;
+    while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;
+    let cd=Math.hypot(dx,dy)*Math.cos(a);
+    if(cd<=.2)return null;
+    let sx=(.5+a/FOV)*W;
+    let dh=Math.min(H*1.5,H/(Math.max(.2,cd)*.72)*doorH);
+    return {sx,top:h-dh/2,bottom:h+dh/2,cd};
+   }
+   const lp0=doorPoint(left0),lp1=doorPoint(left1),rp0=doorPoint(right0),rp1=doorPoint(right1);
+   if(lp0&&lp1&&rp0&&rp1){
+    let zi=Math.max(0,Math.min(n-1,~~(((lp0.sx+lp1.sx+rp0.sx+rp1.sx)/4)/2)));
+    let nearest=Math.min(lp0.cd,lp1.cd,rp0.cd,rp1.cd);
+    if(nearest<=z[zi]+.2){
+     x.save();x.fillStyle="#050505";x.shadowBlur=18;x.shadowColor="#000";
+     function doorPanel(a,b){
+      x.beginPath();
+      x.moveTo(a.sx,a.top);x.lineTo(b.sx,b.top);x.lineTo(b.sx,b.bottom);x.lineTo(a.sx,a.bottom);x.closePath();
+      x.fill();x.strokeStyle="#202020";x.lineWidth=Math.max(1,(a.bottom-a.top)*.018);x.stroke();
+      x.globalAlpha=.9;x.fillStyle="#333";
+      x.beginPath();x.moveTo(a.sx+3,a.top+(a.bottom-a.top)*.08);x.lineTo(b.sx-3,b.top+(b.bottom-b.top)*.08);x.lineTo(b.sx-3,b.top+(b.bottom-b.top)*.092);x.lineTo(a.sx+3,a.top+(a.bottom-a.top)*.092);x.closePath();x.fill();
+      x.globalAlpha=1;
+     }
+     doorPanel(lp0,lp1);doorPanel(rp0,rp1);
+     if(doorOpen<.35){
+      let cx=(lp0.sx+lp1.sx+rp0.sx+rp1.sx)/4,cy=(lp0.top+lp1.top+rp0.top+rp1.top)/4;
+      let avgH=((lp0.bottom-lp0.top)+(lp1.bottom-lp1.top)+(rp0.bottom-rp0.top)+(rp1.bottom-rp1.top))/4;
+      x.shadowBlur=8;x.shadowColor="#fff";x.fillStyle="#fff";x.font=Math.max(10,Math.min(24,avgH*.15))+"px system-ui";x.fontWeight="900";x.textAlign="center";x.textBaseline="middle";
+      x.fillText("EXIT HERE",cx,cy);
+     }
+     x.restore();
     }
-    x.restore();
    }
   }
   const lights=[[2.5,2.2],[5.5,2.2],[8.5,2.2],[11.5,2.2],[7.5,6.5]];
