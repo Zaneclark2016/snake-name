@@ -75,13 +75,18 @@ function draw(){anim+=.045;
   let ddx=doorX-p.x,ddy=doorY-p.y,doorD=Math.hypot(ddx,ddy),da=Math.atan2(ddy,ddx)-p.a;
   while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
   if(Math.abs(da)<FOV*.7&&doorD>.2&&doorD<24){
-   let cd=doorD*Math.cos(da),sx=(.5+da/FOV)*W,top=h-H/(Math.max(.2,cd)*.72)*.62,dh=Math.min(H*1.5,H/(Math.max(.2,cd)*.72)*.92),dw=Math.max(8,Math.min(W*.24,dh*.55)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));
+   let cd=doorD*Math.cos(da),sx=(.5+da/FOV)*W,dh=Math.min(H*1.5,H/(Math.max(.2,cd)*.72)*1.9),top=h-dh,dw=Math.max(8,Math.min(W*.24,dh*.96)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));
    if(cd<=z[zi]+.15){
-    let gap=dw*doorOpen*.98,half=dw/2;
-    x.save();x.shadowBlur=18;x.shadowColor="#65eaff";x.fillStyle="#17323d";
-    x.fillRect(sx-half,top,Math.max(2,half-gap/2),dh);x.fillRect(sx+gap/2,top,Math.max(2,half-gap/2),dh);
-    x.strokeStyle="#65eaff";x.lineWidth=Math.max(1,dh*.018);x.strokeRect(sx-half,top,Math.max(2,half-gap/2),dh);x.strokeRect(sx+gap/2,top,Math.max(2,half-gap/2),dh);
-    x.globalAlpha=.75;x.fillStyle="#9ff6ff";x.fillRect(sx-half+3,top+dh*.18,Math.max(2,half-gap/2-6),dh*.025);x.fillRect(sx+gap/2+3,top+dh*.18,Math.max(2,half-gap/2-6),dh*.025);x.restore();
+    let gap=dw*doorOpen*.98,half=dw/2,panelW=Math.max(2,half-gap/2);
+    x.save();x.shadowBlur=18;x.shadowColor="#000";x.fillStyle="#050505";
+    x.fillRect(sx-half,top,panelW,dh);x.fillRect(sx+gap/2,top,panelW,dh);
+    x.strokeStyle="#202020";x.lineWidth=Math.max(1,dh*.018);x.strokeRect(sx-half,top,panelW,dh);x.strokeRect(sx+gap/2,top,panelW,dh);
+    x.globalAlpha=.9;x.fillStyle="#333";x.fillRect(sx-half+3,top+dh*.08,Math.max(2,panelW-6),Math.max(2,dh*.012));x.fillRect(sx+gap/2+3,top+dh*.08,Math.max(2,panelW-6),Math.max(2,dh*.012));
+    if(doorOpen<.35){
+     x.shadowBlur=8;x.shadowColor="#fff";x.fillStyle="#fff";x.font=Math.max(10,Math.min(24,dh*.15))+"px system-ui";x.fontWeight="900";x.textAlign="center";x.textBaseline="middle";
+     x.fillText("EXIT HERE",sx,top+dh*.52);
+    }
+    x.restore();
    }
   }
   const lights=[[2.5,2.2],[5.5,2.2],[8.5,2.2],[11.5,2.2],[7.5,6.5]];
