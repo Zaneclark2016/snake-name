@@ -72,7 +72,7 @@ function draw(){anim+=.045;
  }
  let h=gameMode==="lobby"?H*.42-cameraLift:H/2;
  if(gameMode==="lobby"){
-  let ceiling=x.createLinearGradient(0,0,0,h);ceiling.addColorStop(0,"#07101b");ceiling.addColorStop(.7,"#101d2a");ceiling.addColorStop(1,"#1a2b38");x.fillStyle=ceiling;x.fillRect(0,0,W,h);
+  let ceiling=x.createLinearGradient(0,0,0,h);ceiling.addColorStop(0,"#26333a");ceiling.addColorStop(.55,"#34464d");ceiling.addColorStop(1,"#4b5e63");x.fillStyle=ceiling;x.fillRect(0,0,W,h);
   let floor=x.createLinearGradient(0,h,0,H);floor.addColorStop(0,"#263b47");floor.addColorStop(.55,"#1b2d38");floor.addColorStop(1,"#101c24");x.fillStyle=floor;x.fillRect(0,h,W,H-h);
  }else{
   let sky=x.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#5ec8ff");sky.addColorStop(.55,"#a8e6ff");sky.addColorStop(1,"#e8f9ff");x.fillStyle=sky;x.fillRect(0,0,W,h);
