@@ -11,6 +11,8 @@ canvas{width:100%;height:100%;display:block;touch-action:none}#hud{position:fixe
 <canvas id="g"></canvas>
 <div id="hud"><b id="status" class="pill">CONNECTING...</b><b id="players" class="pill">PLAYERS 1</b><div id="joystick"><div id="joystickThumb"></div></div></div>
 <script>
+window.addEventListener("error",e=>{const s=document.getElementById("status");if(s)s.textContent="ERROR: "+(e.message||"GAME ERROR")});
+window.addEventListener("unhandledrejection",e=>{const s=document.getElementById("status");if(s)s.textContent="ERROR: NETWORK"});
 const c=document.getElementById("g"),x=c.getContext("2d"),hud=document.getElementById("hud"),statusEl=document.getElementById("status"),playersEl=document.getElementById("players"),joystick=document.getElementById("joystick"),joystickThumb=document.getElementById("joystickThumb");
 let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[],netClock=0,frameClock=0,anim=0;const TV_MODE=true,MAX_FPS=30,QUALITY=.52;
 const arenaMap=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],lobbyMap=["111111111101111111111","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","100000000000000000001","111111111111111111111"],FOV=Math.PI/2.85,p={x:7.5,y:10.5,a:-Math.PI/2};let gameMode="lobby";let doorOpen=0;function activeMap(){return gameMode==="lobby"?lobbyMap:arenaMap}
@@ -106,7 +108,7 @@ function draw(){anim+=.045;
       x.save();x.globalAlpha=Math.max(.18,Math.min(.75,1-d/14));x.shadowBlur=22;x.shadowColor="#8ff7ff";x.fillStyle="#8ff7ff";
       x.beginPath();x.ellipse(sx,sy+sz*.55,sz*1.8,sz*.42,0,0,Math.PI*2);x.fill();x.restore();
       x.save();x.shadowBlur=16;x.shadowColor="#dfffff";x.fillStyle="#dfffff";
-      x.beginPath();x.roundRect(sx-sz*1.2,sy-sz*.14,sz*2.4,sz*.28,sz*.14);x.fill();
+      x.fillRect(sx-sz*1.2,sy-sz*.14,sz*2.4,sz*.28);
       x.fillStyle="#9eefff";x.fillRect(sx-sz*.7,sy+sz*.14,sz*1.4,sz*.08);x.restore();
      }
     }
@@ -127,10 +129,10 @@ function draw(){anim+=.045;
    x.fillStyle="#07111e";x.fillRect(-wh*.24,-wh*.16,wh*.48,wh*.045);x.fillStyle="#fff";x.font=Math.max(11,wh*.11)+"px system-ui";x.textAlign="center";x.fillText(q.id.slice(-5),0,-wh*.21);x.restore();
   }
  });
- if(gameMode==="lobby"){let dx=realX-p.x,dy=realY-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(d>.05&&Math.abs(a)<FOV*.72){let cd=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.2,H/(Math.max(.2,cd)*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd<=z[zi]+.1){x.save();x.translate(sx,h-wh*.15);x.fillStyle="#567a58";x.strokeStyle="#263d2b";x.lineWidth=Math.max(1,wh*.018);x.beginPath();x.arc(0,-wh*.02,wh*.14,0,7);x.fill();x.stroke();x.fillStyle="#304b35";x.fillRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.strokeRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.fillStyle="#73966b";x.fillRect(-wh*.19,wh*.19,wh*.38,wh*.065);x.fillStyle="#243326";x.fillRect(-wh*.12,wh*.53,wh*.09,wh*.25);x.fillRect(wh*.03,wh*.53,wh*.09,wh*.25);x.restore();}}}else{x.save();x.translate(W/2,H*.88);x.fillStyle="#243747";x.strokeStyle="#0b1822";x.lineWidth=4;x.beginPath();x.roundRect(-50,-60,100,110,18);x.fill();x.stroke();x.fillStyle="#65eaff";x.fillRect(-30,-30,60,12);x.fillRect(-18,-5,36,7);x.fillStyle="#40596b";x.fillRect(-35,25,70,18);x.restore();}
+ if(gameMode==="lobby"){let dx=realX-p.x,dy=realY-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(d>.05&&Math.abs(a)<FOV*.72){let cd=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.2,H/(Math.max(.2,cd)*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd<=z[zi]+.1){x.save();x.translate(sx,h-wh*.15);x.fillStyle="#567a58";x.strokeStyle="#263d2b";x.lineWidth=Math.max(1,wh*.018);x.beginPath();x.arc(0,-wh*.02,wh*.14,0,7);x.fill();x.stroke();x.fillStyle="#304b35";x.fillRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.strokeRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.fillStyle="#73966b";x.fillRect(-wh*.19,wh*.19,wh*.38,wh*.065);x.fillStyle="#243326";x.fillRect(-wh*.12,wh*.53,wh*.09,wh*.25);x.fillRect(wh*.03,wh*.53,wh*.09,wh*.25);x.restore();}}}else{x.save();x.translate(W/2,H*.88);x.fillStyle="#243747";x.strokeStyle="#0b1822";x.lineWidth=4;x.beginPath();x.rect(-50,-60,100,110);x.fill();x.stroke();x.fillStyle="#65eaff";x.fillRect(-30,-30,60,12);x.fillRect(-18,-5,36,7);x.fillStyle="#40596b";x.fillRect(-35,25,70,18);x.restore();}
  p.x=realX;p.y=realY;p.a=realA;
  if(gameMode!=="lobby"){x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.moveTo(W/2-10,H/2);x.lineTo(W/2+10,H/2);x.moveTo(W/2,H/2-10);x.lineTo(W/2,H/2+10);x.stroke();}
-function loop(t){if(!run)return;let dt=(t-last)/1000;if(dt<1/MAX_FPS){requestAnimationFrame(loop);return}dt=Math.min(.05,dt);last=t;update(dt);draw();requestAnimationFrame(loop)}
+function loop(t){if(!run)return;let dt=(t-last)/1000;last=t;if(!Number.isFinite(dt)||dt<=0)dt=1/60;dt=Math.min(.05,dt);try{update(dt);draw()}catch(e){run=false;statusEl.textContent="ERROR: "+(e&&e.message?e.message:"GAME ERROR");console.error(e);return}requestAnimationFrame(loop)}
 addEventListener("keydown",e=>{let k=e.key;if(k==="ArrowUp"||k==="ArrowDown"||k==="ArrowLeft"||k==="ArrowRight"||k==="w"||k==="a"||k==="s"||k==="d"){e.preventDefault();keys[k.toLowerCase()]=1}});addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=0});
 let mt=null,joyBase=null;
 window.addEventListener("load",()=>begin());
