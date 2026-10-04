@@ -11,58 +11,58 @@ h1{font-size:42px;margin:0}.sub{color:#abc;margin-bottom:20px}button{padding:14p
 </head><body>
 <canvas id="g"></canvas>
 <div id="hud" class="hidden"><b id="status" class="pill">CONNECTING...</b><b id="players" class="pill">PLAYERS 1</b><div id="joystick"><div id="joystickThumb"></div></div></div>
-<div id="menu"><div class="panel"><div class="small">ONLINE LOBBY</div><h1>NEON ARENA</h1><p class="sub" id="sub">Connecting to the lobby...</p><div id="lobbyPlayers" class="pill" style="position:static;display:inline-block;margin:4px 0 12px">PLAYERS 1</div><div id="share" class="hidden"><p class="small">Invite other players to this lobby:</p><input id="invite" readonly><br><button id="copy">COPY INVITE</button></div><br><button id="start">ENTER ARENA</button><p class="small">You spawn in the lobby first. When you are ready, enter the shared arena.<br>TV/desktop: arrow keys or WASD. iPad: use the left joystick to move and drag the right side to look.</p></div></div>
+<div id="menu"><div class="panel"><div class="small">PHYSICAL LOBBY</div><h1>NEON ARENA</h1><p class="sub" id="sub">Loading the 3D lobby...</p><div id="lobbyPlayers" class="pill" style="position:static;display:inline-block;margin:4px 0 12px">PLAYERS 1</div><div id="share" class="hidden"><p class="small">Invite other players to this lobby:</p><input id="invite" readonly><br><button id="copy">COPY INVITE</button></div><p class="small">You are physically inside the lobby now. Walk toward the glowing exit to enter the arena.<br>TV/desktop: arrow keys or WASD. iPad: use the left joystick to move and drag the right side to look.</p></div></div>
 <script>
 const c=document.getElementById("g"),x=c.getContext("2d"),menu=document.getElementById("menu"),hud=document.getElementById("hud"),statusEl=document.getElementById("status"),playersEl=document.getElementById("players"),lobbyPlayers=document.getElementById("lobbyPlayers"),start=document.getElementById("start"),sub=document.getElementById("sub"),share=document.getElementById("share"),invite=document.getElementById("invite"),copy=document.getElementById("copy"),joystick=document.getElementById("joystick"),joystickThumb=document.getElementById("joystickThumb");
 let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[],netClock=0,frameClock=0,anim=0;const TV_MODE=true,MAX_FPS=30,QUALITY=.52;
-const map=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],FOV=Math.PI/3,p={x:2.5,y:1.8,a:0};
+const arenaMap=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],lobbyMap=["111111101111111","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","100000001000001","111111111111111"],FOV=Math.PI/3,p={x:7.5,y:10.5,a:-Math.PI/2};let gameMode="lobby";function activeMap(){return gameMode==="lobby"?lobbyMap:arenaMap}
 function size(){D=QUALITY;W=innerWidth;H=innerHeight;c.width=Math.max(320,Math.floor(W*D));c.height=Math.max(180,Math.floor(H*D));x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
-function wall(a,b){return a<0||b<0||a>=15||b>=13||map[Math.floor(b)][Math.floor(a)]==="1"}
+function wall(a,b){return a<0||b<0||a>=15||b>=13||activeMap()[Math.floor(b)][Math.floor(a)]==="1"}
 function ray(a){let dx=Math.cos(a),dy=Math.sin(a),xx=p.x,yy=p.y,d=0;while(d<24){xx+=dx*.06;yy+=dy*.06;d+=.06;if(wall(xx,yy))break}return d}
-function spawnPoint(){let spots=[[2.5,1.8],[7.5,6.5],[12.5,10.5],[11.5,2.5],[3.5,10.5],[7.5,2.5],[11.5,7.5]];return spots[Math.floor(Math.random()*spots.length)]}
+function spawnPoint(){let spots=[[2.5,1.8],[7.5,6.5],[12.5,10.5],[11.5,2.5],[3.5,10.5],[7.5,2.5],[11.5,7.5]];return spots[Math.floor(Math.random()*spots.length)]}function enterPhysicalArena(){if(gameMode!=="lobby")return;gameMode="arena";p.x=7.5;p.y=10.5;p.a=-Math.PI/2;if(players[myId])players[myId].mode="arena";if(hostConn&&hostConn.open)hostConn.send({type:"mode",id:myId,mode:"arena"});if(isHost)send({type:"players",players:snapshot()});}
 function send(o){if(hostConn&&hostConn.open)hostConn.send(o);for(const q of connections)if(q.open)q.send(o)}
 function snapshot(){let a=[];for(const id in players)a.push(players[id]);return a}
 function setupHost(){
  isHost=true;peer=new Peer("neon-arena-"+Math.random().toString(36).slice(2,8));
- peer.on("open",id=>{myId=id;players[id]={id,x:p.x,y:p.y,a:p.a,color:colorFor(id)};showShare(id);statusEl.textContent="LOBBY • ONLINE";updateCount()});
+ peer.on("open",id=>{myId=id;players[id]={id,x:p.x,y:p.y,a:p.a,color:colorFor(id),mode:"lobby"};showShare(id);statusEl.textContent="LOBBY • ONLINE";updateCount()});
  peer.on("connection",conn=>{connections.push(conn);conn.on("open",()=>{conn.send({type:"welcome",players:snapshot()});updateCount()});conn.on("data",d=>handleHost(conn,d));conn.on("close",()=>{connections=connections.filter(q=>q!==conn);updateCount()})});
  peer.on("error",e=>{statusEl.textContent="CONNECTION ERROR";console.log(e)});
 }
 function handleHost(conn,d){
- if(d.type==="join"){players[d.id]={id:d.id,x:d.x,y:d.y,a:d.a,color:colorFor(d.id)};send({type:"players",players:snapshot()});updateCount()}
- if(d.type==="state"&&players[d.id]){players[d.id].x=d.x;players[d.id].y=d.y;players[d.id].a=d.a;send({type:"players",players:snapshot()})}
+ if(d.type==="join"){players[d.id]={id:d.id,x:d.x,y:d.y,a:d.a,color:colorFor(d.id),mode:"lobby"};send({type:"players",players:snapshot()});updateCount()}
+ if(d.type==="state"&&players[d.id]){players[d.id].x=d.x;players[d.id].y=d.y;players[d.id].a=d.a;players[d.id].mode=d.mode||"lobby";send({type:"players",players:snapshot()})}if(d.type==="mode"&&players[d.id]){players[d.id].mode=d.mode;send({type:"players",players:snapshot()})}
 }
 function joinHost(hostId){
  peer=new Peer();
- peer.on("open",id=>{myId=id;hostConn=peer.connect(hostId,{reliable:true});hostConn.on("open",()=>{statusEl.textContent="LOBBY • ONLINE";sub.textContent="You joined the lobby • "+hostId;hostConn.send({type:"join",id,x:p.x,y:p.y,a:p.a});updateCount()});hostConn.on("data",d=>handleClient(d));hostConn.on("close",()=>{statusEl.textContent="HOST LEFT";run=false;hud.classList.add("hidden");menu.classList.remove("hidden");sub.textContent="The arena host disconnected. Re-enter using a new invite.";});});
+ peer.on("open",id=>{myId=id;hostConn=peer.connect(hostId,{reliable:true});hostConn.on("open",()=>{statusEl.textContent="LOBBY • ONLINE";sub.textContent="You joined the lobby • "+hostId;hostConn.send({type:"join",id,x:p.x,y:p.y,a:p.a,mode:"lobby"});updateCount()});hostConn.on("data",d=>handleClient(d));hostConn.on("close",()=>{statusEl.textContent="HOST LEFT";run=false;hud.classList.add("hidden");menu.classList.remove("hidden");sub.textContent="The arena host disconnected. Re-enter using a new invite.";});});
  peer.on("error",()=>{statusEl.textContent="COULD NOT CONNECT"});
 }
-function handleClient(d){if(d.type==="welcome"||d.type==="players"){players={};for(const q of d.players)players[q.id]=q;players[myId]={id:myId,x:p.x,y:p.y,a:p.a,color:colorFor(myId)};updateCount()}}
+function handleClient(d){if(d.type==="welcome"||d.type==="players"){players={};for(const q of d.players)players[q.id]=q;players[myId]={id:myId,x:p.x,y:p.y,a:p.a,color:colorFor(myId),mode:gameMode};updateCount()}}
 function colorFor(id){let n=0;for(let i=0;i<id.length;i++)n=(n*31+id.charCodeAt(i))>>>0;return "hsl("+(n%360)+" 85% 60%)"}
 function updateCount(){let n=Object.keys(players).length;playersEl.textContent="PLAYERS "+n;lobbyPlayers.textContent="PLAYERS "+n}
 function showShare(id){share.classList.remove("hidden");invite.value=location.origin+location.pathname+"?host="+encodeURIComponent(id);sub.textContent="Lobby ready • you are the host"}
 copy.onclick=async()=>{try{await navigator.clipboard.writeText(invite.value);copy.textContent="COPIED!";setTimeout(()=>copy.textContent="COPY INVITE",1200)}catch(e){invite.select();document.execCommand("copy")}}
 function loadPeer(done){if(window.Peer){done(true);return}let sc=document.createElement("script");sc.src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";sc.onload=()=>done(true);sc.onerror=()=>done(false);document.head.appendChild(sc);setTimeout(()=>{if(!window.Peer)done(false)},5000)}
-function enterArena(){menu.classList.add("hidden");hud.classList.remove("hidden");sub.textContent="In the lobby";}
+function enterArena(){}
 function begin(){
  if(run)return;
  run=true;last=performance.now();statusEl.textContent="CONNECTING...";requestAnimationFrame(loop);
  let host=new URLSearchParams(location.search).get("host");
- loadPeer(ok=>{if(!run)return;if(ok){if(host){sub.textContent="Joining your lobby...";joinHost(host)}else{setupHost()}}else{statusEl.textContent="LOCAL • ONLINE SETUP UNAVAILABLE";sub.textContent="Local lobby • online setup unavailable";myId="local";players[myId]={id:myId,x:p.x,y:p.y,a:p.a,color:"#65eaff"};updateCount()}});
+ loadPeer(ok=>{if(!run)return;if(ok){if(host){sub.textContent="Joining your lobby...";joinHost(host)}else{setupHost()}}else{statusEl.textContent="LOCAL • ONLINE SETUP UNAVAILABLE";sub.textContent="Local lobby • online setup unavailable";myId="local";players[myId]={id:myId,x:p.x,y:p.y,a:p.a,color:"#65eaff",mode:"lobby"};updateCount()}});
 }
-start.onclick=enterArena;start.ontouchend=e=>{e.preventDefault();enterArena()};start.addEventListener("pointerup",e=>{e.preventDefault();enterArena()});
+start.onclick=null;
 function move(dx,dy){let nx=p.x+dx,ny=p.y+dy;if(!wall(nx,p.y))p.x=nx;if(!wall(p.x,ny))p.y=ny}
 function update(dt){
- let mx=0,my=0;if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a||keys.arrowleft)mx--;if(keys.d||keys.arrowright)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;
+ let mx=0,my=0;if(gameMode==="lobby"&&p.y<1.7){enterPhysicalArena();return}if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a||keys.arrowleft)mx--;if(keys.d||keys.arrowright)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;
  mx+=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.18*dt*60,fx=Math.cos(p.a),fy=Math.sin(p.a),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);
- if(players[myId]){players[myId].x=p.x;players[myId].y=p.y;players[myId].a=p.a}
- netClock+=dt;if(hostConn&&hostConn.open&&netClock>.10){netClock=0;hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a})}
+ if(players[myId]){players[myId].x=p.x;players[myId].y=p.y;players[myId].a=p.a;players[myId].mode=gameMode}
+ netClock+=dt;if(hostConn&&hostConn.open&&netClock>.10){netClock=0;hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a,mode:gameMode})}
 }
 function draw(){anim+=.045;
  let h=H/2,sky=x.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#5ec8ff");sky.addColorStop(.55,"#a8e6ff");sky.addColorStop(1,"#e8f9ff");x.fillStyle=sky;x.fillRect(0,0,W,h);
  let ground=x.createLinearGradient(0,h,0,H);ground.addColorStop(0,"#9dcc72");ground.addColorStop(.5,"#b9df86");ground.addColorStop(1,"#d7eea8");x.fillStyle=ground;x.fillRect(0,h,W,H-h);
  let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a)*Math.cos(a-p.a);z[i]=d;let wh=Math.min(H*2,H/(d*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}
- Object.values(players).filter(q=>q.id!==myId).forEach(q=>{
+ Object.values(players).filter(q=>q.id!==myId&&q.mode===gameMode).forEach(q=>{
   let dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(Math.abs(a)>FOV*.7)return;
   let cd=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.4,H/(cd*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd<=z[zi]+.1){
    x.save();x.translate(sx,h-wh*.15);let bob=Math.sin(anim+d*1.7)*wh*.018,step=Math.sin(anim*1.7+d)*wh*.025;x.translate(0,bob);
@@ -76,7 +76,7 @@ function draw(){anim+=.045;
    x.fillStyle="#07111e";x.fillRect(-wh*.24,-wh*.16,wh*.48,wh*.045);x.fillStyle="#fff";x.font=Math.max(11,wh*.11)+"px system-ui";x.textAlign="center";x.fillText(q.id.slice(-5),0,-wh*.21);x.restore();
   }
  });
- x.save();x.translate(W/2,H*.88);x.fillStyle="#243747";x.strokeStyle="#0b1822";x.lineWidth=4;x.beginPath();x.roundRect(-50,-60,100,110,18);x.fill();x.stroke();x.fillStyle="#65eaff";x.fillRect(-30,-30,60,12);x.fillRect(-18,-5,36,7);x.fillStyle="#40596b";x.fillRect(-35,25,70,18);x.restore();
+ if(gameMode==="lobby"){x.save();x.fillStyle="#06101dcc";x.fillRect(W*.5-150,H*.14,300,54);x.strokeStyle="#65eaff";x.strokeRect(W*.5-150,H*.14,300,54);x.fillStyle="#65eaff";x.font="800 22px system-ui";x.textAlign="center";x.fillText("LOBBY • FIND THE EXIT",W*.5,H*.14+34);x.restore();x.save();x.translate(W/2,H*.48);x.strokeStyle="#65eaff";x.lineWidth=6;x.shadowBlur=18;x.shadowColor="#65eaff";x.strokeRect(-55,-110,110,220);x.fillStyle="#65eaff33";x.fillRect(-55,-110,110,220);x.shadowBlur=0;x.fillStyle="#fff";x.font="900 18px system-ui";x.textAlign="center";x.fillText("ARENA",0,-125);x.restore();}else{x.save();x.translate(W/2,H*.88);x.fillStyle="#243747";x.strokeStyle="#0b1822";x.lineWidth=4;x.beginPath();x.roundRect(-50,-60,100,110,18);x.fill();x.stroke();x.fillStyle="#65eaff";x.fillRect(-30,-30,60,12);x.fillRect(-18,-5,36,7);x.fillStyle="#40596b";x.fillRect(-35,25,70,18);x.restore();}
  x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.moveTo(W/2-10,H/2);x.lineTo(W/2+10,H/2);x.moveTo(W/2,H/2-10);x.lineTo(W/2,H/2+10);x.stroke();
 }
 function loop(t){if(!run)return;let dt=(t-last)/1000;if(dt<1/MAX_FPS){requestAnimationFrame(loop);return}dt=Math.min(.05,dt);last=t;update(dt);draw();requestAnimationFrame(loop)}
