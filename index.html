@@ -14,7 +14,7 @@ h1{font-size:42px;margin:0}.sub{color:#abc;margin-bottom:20px}button{padding:14p
 <div id="menu"><div class="panel"><h1>NEON ARENA</h1><p class="sub" id="sub">Shared online 3D arena.</p><button id="start">ENTER ARENA</button><div id="share" class="hidden"><p class="small">Share this link so other people join the same arena:</p><input id="invite" readonly><br><button id="copy">COPY INVITE</button></div><p class="small">TV/desktop: arrow keys or WASD. iPad: drag the left side to move and the right side to look.</p></div></div>
 <script>
 const c=document.getElementById("g"),x=c.getContext("2d"),menu=document.getElementById("menu"),hud=document.getElementById("hud"),statusEl=document.getElementById("status"),playersEl=document.getElementById("players"),start=document.getElementById("start"),sub=document.getElementById("sub"),share=document.getElementById("share"),invite=document.getElementById("invite"),copy=document.getElementById("copy");
-let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[],netClock=0,frameClock=0;const TV_MODE=true,MAX_FPS=30,QUALITY=.52;
+let W,H,D=1,run=false,last=0,keys={},joy={x:0,y:0},look=null,peer=null,hostConn=null,isHost=false,myId="",players={},connections=[],netClock=0,frameClock=0,anim=0;const TV_MODE=true,MAX_FPS=30,QUALITY=.52;
 const map=["111111111111111","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","100000000000001","111111111111111"],FOV=Math.PI/3,p={x:2.5,y:1.8,a:0};
 function size(){D=QUALITY;W=innerWidth;H=innerHeight;c.width=Math.max(320,Math.floor(W*D));c.height=Math.max(180,Math.floor(H*D));x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
 function wall(a,b){return a<0||b<0||a>=15||b>=13||map[Math.floor(b)][Math.floor(a)]==="1"}
@@ -56,14 +56,21 @@ function update(dt){
  if(players[myId]){players[myId].x=p.x;players[myId].y=p.y;players[myId].a=p.a}
  netClock+=dt;if(hostConn&&hostConn.open&&netClock>.10){netClock=0;hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a})}
 }
-function draw(){
+function draw(){anim+=.045;
  let h=H/2,sky=x.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#5ec8ff");sky.addColorStop(.55,"#a8e6ff");sky.addColorStop(1,"#e8f9ff");x.fillStyle=sky;x.fillRect(0,0,W,h);
  let ground=x.createLinearGradient(0,h,0,H);ground.addColorStop(0,"#9dcc72");ground.addColorStop(.5,"#b9df86");ground.addColorStop(1,"#d7eea8");x.fillStyle=ground;x.fillRect(0,h,W,H-h);
  let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a)*Math.cos(a-p.a);z[i]=d;let wh=Math.min(H*2,H/(d*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}
  Object.values(players).filter(q=>q.id!==myId).forEach(q=>{
   let dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx)-p.a;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(Math.abs(a)>FOV*.7)return;
   let cd=d*Math.cos(a),sx=(.5+a/FOV)*W,wh=Math.min(H*1.4,H/(cd*.72)),zi=Math.max(0,Math.min(n-1,~~(sx/2)));if(cd<=z[zi]+.1){
-   x.save();x.translate(sx,h-wh*.15);x.fillStyle=q.color;x.beginPath();x.arc(0,wh*.08,wh*.15,0,7);x.fill();x.fillRect(-wh*.18,wh*.2,wh*.36,wh*.34);
+   x.save();x.translate(sx,h-wh*.15);let bob=Math.sin(anim+d*1.7)*wh*.018,step=Math.sin(anim*1.7+d)*wh*.025;x.translate(0,bob);
+   x.fillStyle="#567a58";x.strokeStyle="#263d2b";x.lineWidth=Math.max(1,wh*.018);x.beginPath();x.arc(0,-wh*.02,wh*.14,0,7);x.fill();x.stroke();
+   x.fillStyle="#304b35";x.fillRect(-wh*.17,wh*.15,wh*.34,wh*.38);x.strokeRect(-wh*.17,wh*.15,wh*.34,wh*.38);
+   x.fillStyle="#73966b";x.save();x.translate(-wh*.19,wh*.19);x.rotate(-.12+Math.sin(anim*1.7+d)*.04);x.fillRect(-wh*.03,0,wh*.36,wh*.065);x.restore();
+   x.save();x.translate(wh*.19,wh*.19);x.rotate(.12-Math.sin(anim*1.7+d)*.04);x.fillRect(-wh*.33,0,wh*.36,wh*.065);x.restore();
+   x.fillStyle="#243326";x.fillRect(-wh*.12,wh*.53,wh*.09,wh*.25+step);x.fillRect(wh*.03,wh*.53,wh*.09,wh*.25-step);
+   x.fillStyle="#d9e58b";x.beginPath();x.arc(-wh*.055,-wh*.035,wh*.025,0,7);x.arc(wh*.055,-wh*.035,wh*.025,0,7);x.fill();
+   x.fillStyle="#101810";x.fillRect(-wh*.07,wh*.035,wh*.14,wh*.025);
    x.fillStyle="#07111e";x.fillRect(-wh*.24,-wh*.16,wh*.48,wh*.045);x.fillStyle="#fff";x.font=Math.max(11,wh*.11)+"px system-ui";x.textAlign="center";x.fillText(q.id.slice(-5),0,-wh*.21);x.restore();
   }
  });
