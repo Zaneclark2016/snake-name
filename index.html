@@ -52,7 +52,7 @@ start.onclick=begin;
 function move(dx,dy){let nx=p.x+dx,ny=p.y+dy;if(!wall(nx,p.y))p.x=nx;if(!wall(p.x,ny))p.y=ny}
 function update(dt){
  let mx=0,my=0;if(keys.w||keys.arrowup)my++;if(keys.s||keys.arrowdown)my--;if(keys.a||keys.arrowleft)mx--;if(keys.d||keys.arrowright)mx++;if(keys.arrowleft)p.a-=2.5*dt;if(keys.arrowright)p.a+=2.5*dt;
- mx+=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.075*dt*60,fx=Math.cos(p.a),fy=Math.sin(p.a),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);
+ mx+=joy.x;my+=joy.y;let l=Math.hypot(mx,my)||1,s=.18*dt*60,fx=Math.cos(p.a),fy=Math.sin(p.a),rx=-fy,ry=fx;move((fx*my+rx*mx)/l*s,(fy*my+ry*mx)/l*s);
  if(players[myId]){players[myId].x=p.x;players[myId].y=p.y;players[myId].a=p.a}
  netClock+=dt;if(hostConn&&hostConn.open&&netClock>.10){netClock=0;hostConn.send({type:"state",id:myId,x:p.x,y:p.y,a:p.a})}
 }
