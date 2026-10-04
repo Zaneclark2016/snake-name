@@ -71,7 +71,7 @@ function draw(){anim+=.045;
  let n=Math.ceil(W/4),z=new Float32Array(n);for(let i=0;i<n;i++){let a=p.a-FOV/2+i/n*FOV,d=ray(a)*Math.cos(a-p.a);z[i]=d;let wh=Math.min(H*2,H/(d*.72)),yy=h-wh/2,sh=Math.max(.2,1-d/16);x.fillStyle="rgb("+~~(75+70*sh)+","+~~(105+85*sh)+","+~~(120+85*sh)+")";x.fillRect(i*4,yy,4,wh)}
  if(gameMode==="lobby"){
   // Automatic sensor door at the north exit. The two panels slide into the side walls as the player approaches.
-  const doorX=10,doorY=.42,doorW=1.82,doorH=1.9;
+  const doorX=10,doorY=.42,doorW=2.0,doorH=1.9;
   let ddx=doorX-p.x,ddy=doorY-p.y,doorD=Math.hypot(ddx,ddy),da=Math.atan2(ddy,ddx)-p.a;
   while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
   if(Math.abs(da)<FOV*.7&&doorD>.2&&doorD<24){
