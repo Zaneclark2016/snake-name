@@ -55,7 +55,7 @@ function update(dt){
 }
 function draw(){anim+=.045;
  const realX=p.x,realY=p.y,realA=p.a;
- if(gameMode==="lobby"){p.x=realX-Math.cos(realA)*1.15;p.y=realY-Math.sin(realA)*1.15;}
+ if(gameMode==="lobby"){const camDist=2.0,camAngle=realA+Math.PI*.75;p.x=realX-Math.cos(camAngle)*camDist;p.y=realY-Math.sin(camAngle)*camDist;}
  let h=gameMode==="lobby"?H*.42:H/2;
  if(gameMode==="lobby"){
   let ceiling=x.createLinearGradient(0,0,0,h);ceiling.addColorStop(0,"#07101b");ceiling.addColorStop(.7,"#101d2a");ceiling.addColorStop(1,"#1a2b38");x.fillStyle=ceiling;x.fillRect(0,0,W,h);
